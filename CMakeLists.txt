@@ -43,8 +43,8 @@ include_directories(
 )
 
 link_directories("${PROJECT_SOURCE_DIR}")
-add_executable(hal_mobile_app ${agribot_common_SOURCE_DIR}/src/Can.cpp src/MobileAppHandler.cpp src/mobile_app_node.cpp)
-target_link_libraries(hal_mobile_app ${catkin_LIBRARIES})
+add_executable(hal_mobile_app src/MobileAppHandler.cpp src/mobile_app_node.cpp)
+target_link_libraries(hal_mobile_app ${agribot_common_LIBRARIES} ${catkin_LIBRARIES})
 add_dependencies(hal_mobile_app ${catkin_EXPORTED_TARGETS})
 
 #############

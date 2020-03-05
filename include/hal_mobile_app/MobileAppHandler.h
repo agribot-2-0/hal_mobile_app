@@ -19,8 +19,8 @@ class MobileAppHandler
 {
     Can _CanHandler;
     std::queue<can_frame> _FramesQueue;
-    double _fManualAgnularVelo = 0;
     double _fManualLinearVelo = 0;
+    double _fRadius = 0;
     int16_t i16GetTwoBytes(uint8_t u8StartBit, can_frame CanFrame);
 
     //simulation part
@@ -40,7 +40,7 @@ public:
     ~MobileAppHandler();
     void vReceiveCanFrames();
     uint8_t u8ParseCanFrames();
-    float fGetManualAngularVelo();
+    float fGetManualRadius();
     float fGetManualLinearVelo();
 
     virtual int configure();

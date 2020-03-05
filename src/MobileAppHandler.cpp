@@ -12,8 +12,8 @@
 #define PROTOCOL_ERROR_FRAMES 0x0C8
 #define PROTOCOL_MAN_ERROR_FRAMES 0x0C9
 
-#define LIN_VELO_SIGN_BIT 0
-#define DIRECTION_SIGN_BIT 1
+#define LIN_VELO_SIGN_BYTE 0
+#define DIRECTION_SIGN_BYTE 1
 #define RADIUS_BYTE 2
 #define LIN_VELO_BYTE 4
 #define RADIUS_PARSE_CONST 10
@@ -22,10 +22,16 @@
 #define MAX_RADIUS 10
 #define MIN_RADIUS 1.5
 
+#define LEFT_ARCH 1
+#define RIGHT_ARCH -1
+
+#define BACKWARD -1
+#define FORWARD 1
+
 MobileAppHandler::MobileAppHandler(char* pchCanChannel)
 {
     _CanHandler.iInitialize(pchCanChannel);
-    _fManualAgnularVelo=0;
+    _fRadius=0;
     _fManualLinearVelo=0;
 
     command_id = 0;
@@ -70,16 +76,11 @@ uint8_t MobileAppHandler::u8ParseCanFrames()
         message = _FramesQueue.front();
         if((PROTOCOL_ARC_FRAME&ADDR_MASK) == (message.can_id&ADDR_MASK))
         {
-                int8_t i8VeloSign = message.data[LIN_VELO_SIGN_BIT]==0 ? -1:1;
-                int8_t i8DirectionSign = message.data[DIRECTION_SIGN_BIT]==0 ? -1:1;
-                _fManualLinearVelo = ((float)(i16GetTwoBytes(LIN_VELO_BYTE,message))*i8VeloSign)/LIN_VELO_PARSE_CONST;
-                float fRadius = ((float)(i16GetTwoBytes(RADIUS_BYTE,message))*i8DirectionSign)/RADIUS_PARSE_CONST;
-                _fManualAgnularVelo = 0;
-                if(std::abs(fRadius) < MAX_RADIUS && std::abs(fRadius) > MIN_RADIUS)
-                {
-                    _fManualAgnularVelo=_fManualLinearVelo/fRadius;
-                }
-                u8Status |= RECEIVED_MANUAL_STEERING;
+            int8_t i8VeloSign = message.data[LIN_VELO_SIGN_BYTE] == 0 ? BACKWARD:FORWARD;
+            int8_t i8DirectionSign = message.data[DIRECTION_SIGN_BYTE] == 0 ? RIGHT_ARCH:LEFT_ARCH;
+            _fManualLinearVelo = ((float)(i16GetTwoBytes(LIN_VELO_BYTE, message))*i8VeloSign)/LIN_VELO_PARSE_CONST;
+            _fRadius = ((float)(i16GetTwoBytes(RADIUS_BYTE, message))*i8DirectionSign)/RADIUS_PARSE_CONST;
+            u8Status |= RECEIVED_MANUAL_STEERING;
         }
         else if((PROTOCOL_HANDSHAKE_FRAME&ADDR_MASK) == (message.can_id&ADDR_MASK))
         {
@@ -110,9 +111,9 @@ uint8_t MobileAppHandler::u8ParseCanFrames()
     return u8Status;
 }
 
-float MobileAppHandler::fGetManualAngularVelo()
+float MobileAppHandler::fGetManualRadius()
 {
-    return _fManualAgnularVelo;
+    return _fRadius;
 }
 
 float MobileAppHandler::fGetManualLinearVelo()

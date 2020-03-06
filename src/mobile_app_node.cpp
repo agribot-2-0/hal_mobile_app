@@ -112,18 +112,28 @@ int main(int argc, char **argv)
           {
               frame_msg.header.stamp = ros::Time::now();
               frame_msg.header.frame_id = "mobile_app_commands_link";
-              frame_msg.can_id = 30;
+              frame_msg.can_id = 31;
               frame_msg.can_byte_array[0] = 10;
               state_machine_pub.publish(frame_msg);
           }
-          if((u8Status&RECEIVED_AUTO_STEERING) == RECEIVED_AUTO_STEERING)
+          if((u8Status&RECEIVED_PROTOCOL_ERROR) == RECEIVED_PROTOCOL_ERROR)
           {
               frame_msg.header.stamp = ros::Time::now();
               frame_msg.header.frame_id = "mobile_app_commands_link";
-              frame_msg.can_id = 30;
-              frame_msg.can_byte_array[0] = 10;
+              frame_msg.can_id = 200;
+              frame_msg.can_byte_array[0] = 0x00;
+              frame_msg.can_byte_array[1] = 0x0F;
               state_machine_pub.publish(frame_msg);
           }
+          if((u8Status&RECEIVED_MANUALSTEERING_ERROR) == RECEIVED_MANUALSTEERING_ERROR)
+          {
+              frame_msg.header.stamp = ros::Time::now();
+              frame_msg.header.frame_id = "mobile_app_commands_link";
+              frame_msg.can_id = 201;
+              frame_msg.can_byte_array[0] = 0x00;
+              frame_msg.can_byte_array[1] = 0x0F;
+          }
+          
       }
       ros::spinOnce();
 

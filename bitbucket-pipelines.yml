@@ -3,6 +3,18 @@ image: docker:git
 pipelines:
   default:
      - step:
+         name: "Check cppcheck"
+         script:
+           - apk add --update bash coreutils tar cppcheck
+           - cppcheck src/*
+     - step:
+         name: "Check cpplint"
+         script:
+           - apk add --update bash coreutils tar python3 py3-pip
+           - pip3 install cpplint
+           - cpplint --recursive src/*
+     - step:
+         name: "ROS build"
          services:
            - docker
          script:

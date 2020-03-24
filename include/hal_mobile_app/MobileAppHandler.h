@@ -28,7 +28,7 @@ class MobileAppHandler
     std::queue<uint8_t> _ManualErrorSpecificQueue;
     int16_t i16GetTwoBytes(uint8_t u8StartBit, can_frame CanFrame);
 
-    //configuration data
+    // onfiguration data
     bool bReceivedCompleteConfig;
     uint uFrontToolAngle;
     uint uFrontToolLength;
@@ -43,11 +43,11 @@ class MobileAppHandler
     uint8_t u8BackToolValveBlueFlow;
     uint8_t u8BackToolMotorSpeed;
 
-    //simulation part
+    // simulation part
     bool bFreshData;
     int iCommandId;
     int8_t msg_byte_array[8];
-    std::string strChosenTask; 
+    std::string strChosenTask;
 
     float fFrontLinear;
     float fFrontAngular;
@@ -72,12 +72,12 @@ class MobileAppHandler
     virtual bool stop();
     virtual bool cleanup();
 
-    //read the chosen task name 
+    // read the chosen task name
     void vSetChosenTask(std::string strTaskName);
-    //returns the chosen task name 
+    // returns the chosen task name
     std::string strGetTaskName();
 
-    //simulation part
+    // simulation part
     void vCreateSimStateMachineAppFrame(
         agribot_msgs::AgribotMobileAppFrame* pFrame);
 
@@ -86,7 +86,6 @@ class MobileAppHandler
     void vSetSimulationMoveFrame(float fFrLin,
         float fFrAng, float fBkLin, float fBkAng);
 
-
-    //check if new simulation frame has been received
+    // check if new simulation frame has been received
     bool bDataPendingSimulation();
 };

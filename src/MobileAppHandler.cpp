@@ -158,31 +158,44 @@ uint8_t MobileAppHandler::u8ParseCanFrames()
             _ManualErrorSpecificQueue.push(message.data[ERROR_SPECIFIC_BYTE]);
             u8Status |= RECEIVED_MANUALSTEERING_ERROR;
         }
-        else if ((PROTOCOL_CONFIGURATION_FRAME&ADDR_MASK) == (message.can_id&ADDR_MASK))
+        else if ((PROTOCOL_CONFIGURATION_FRAME&ADDR_MASK)
+                 == (message.can_id&ADDR_MASK))
         {
             if (message.data[CONFIG_TYPE_BYTE] == CONFIG_FRONT_TOOL_AL)
             {
-                uFrontToolAngle = static_cast<uint>(i16GetTwoBytes(CONFIG_TOOL_ANGLE_BYTE, message));
-                uFrontToolLength = static_cast<uint>(i16GetTwoBytes(CONFIG_TOOL_LENGTH_BYTE, message));
+                uFrontToolAngle = static_cast<uint>
+                (i16GetTwoBytes(CONFIG_TOOL_ANGLE_BYTE, message));
+                uFrontToolLength = static_cast<uint>
+                (i16GetTwoBytes(CONFIG_TOOL_LENGTH_BYTE, message));
             }
             else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_FRONT_TOOL_VM)
             {
-                u8FrontToolValveRedFlow = message.data[CONFIG_TOOL_VALVE_R_BYTE];
-                u8FrontToolValveGreenFlow = message.data[CONFIG_TOOL_VALVE_G_BYTE];
-                u8FrontToolValveBlueFlow = message.data[CONFIG_TOOL_VALVE_B_BYTE];
-                u8FrontToolMotorSpeed = message.data[CONFIG_TOOL_MOTOR_BYTE];
+                u8FrontToolValveRedFlow =
+                message.data[CONFIG_TOOL_VALVE_R_BYTE];
+                u8FrontToolValveGreenFlow =
+                message.data[CONFIG_TOOL_VALVE_G_BYTE];
+                u8FrontToolValveBlueFlow =
+                message.data[CONFIG_TOOL_VALVE_B_BYTE];
+                u8FrontToolMotorSpeed =
+                message.data[CONFIG_TOOL_MOTOR_BYTE];
             }
             else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_BACK_TOOL_AL)
             {
-                uBackToolAngle = static_cast<uint>(i16GetTwoBytes(CONFIG_TOOL_ANGLE_BYTE, message));
-                uBackToolLength = static_cast<uint>(i16GetTwoBytes(CONFIG_TOOL_LENGTH_BYTE, message));
+                uBackToolAngle = static_cast<uint>
+                (i16GetTwoBytes(CONFIG_TOOL_ANGLE_BYTE, message));
+                uBackToolLength = static_cast<uint>
+                (i16GetTwoBytes(CONFIG_TOOL_LENGTH_BYTE, message));
             }
             else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_BACK_TOOL_VM)
             {
-                u8BackToolValveRedFlow = message.data[CONFIG_TOOL_VALVE_R_BYTE];
-                u8BackToolValveGreenFlow = message.data[CONFIG_TOOL_VALVE_G_BYTE];
-                u8BackToolValveBlueFlow = message.data[CONFIG_TOOL_VALVE_B_BYTE];
-                u8BackToolMotorSpeed = message.data[CONFIG_TOOL_MOTOR_BYTE];
+                u8BackToolValveRedFlow =
+                message.data[CONFIG_TOOL_VALVE_R_BYTE];
+                u8BackToolValveGreenFlow =
+                message.data[CONFIG_TOOL_VALVE_G_BYTE];
+                u8BackToolValveBlueFlow =
+                message.data[CONFIG_TOOL_VALVE_B_BYTE];
+                u8BackToolMotorSpeed =
+                message.data[CONFIG_TOOL_MOTOR_BYTE];
             }
             u8Status |= RECEIVED_CONFIGURATION;
         }
@@ -204,14 +217,18 @@ void MobileAppHandler::vAssemblyStateMachineFrame(
                 ptrFrameMsg->can_byte_array[LIN_VELO_SIGN_BYTE] = 1;
             else
                 ptrFrameMsg->can_byte_array[LIN_VELO_SIGN_BYTE] = 0;
-            ptrFrameMsg->can_byte_array[LIN_VELO_BYTE] = ((abs(static_cast<int>(_fManualLinearVelo*100)))&0xFF00)>>8;
-            ptrFrameMsg->can_byte_array[LIN_VELO_BYTE+1] = (abs(static_cast<int>(_fManualLinearVelo*100)))&0x00FF;
+            ptrFrameMsg->can_byte_array[LIN_VELO_BYTE] =
+            ((abs(static_cast<int>(_fManualLinearVelo*100)))&0xFF00)>>8;
+            ptrFrameMsg->can_byte_array[LIN_VELO_BYTE+1] =
+            (abs(static_cast<int>(_fManualLinearVelo*100)))&0x00FF;
             if (_fRadius >= 0)
                 ptrFrameMsg->can_byte_array[DIRECTION_SIGN_BYTE] = 1;
             else
                 ptrFrameMsg->can_byte_array[DIRECTION_SIGN_BYTE] = 0;
-            ptrFrameMsg->can_byte_array[RADIUS_BYTE] = ((abs(static_cast<int>(_fRadius*10)))&0xFF00)>>8;
-            ptrFrameMsg->can_byte_array[RADIUS_BYTE+1] = (abs(static_cast<int>(_fRadius*10)))&0x00FF;
+            ptrFrameMsg->can_byte_array[RADIUS_BYTE] =
+            ((abs(static_cast<int>(_fRadius*10)))&0xFF00)>>8;
+            ptrFrameMsg->can_byte_array[RADIUS_BYTE+1] =
+            (abs(static_cast<int>(_fRadius*10)))&0x00FF;
             break;
         case RECEIVED_HANDSHAKE:
             ptrFrameMsg->header.stamp = ros::Time::now();
@@ -237,9 +254,11 @@ void MobileAppHandler::vAssemblyStateMachineFrame(
                 ptrFrameMsg->header.stamp = ros::Time::now();
                 ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
                 ptrFrameMsg->can_id = PROTOCOL_ERROR_FRAMES;
-                ptrFrameMsg->can_byte_array[ERROR_TYPE_BYTE] = _ProtocolErrorTypeQueue.front();
+                ptrFrameMsg->can_byte_array[ERROR_TYPE_BYTE] =
+                _ProtocolErrorTypeQueue.front();
                 _ProtocolErrorTypeQueue.pop();
-                ptrFrameMsg->can_byte_array[ERROR_SPECIFIC_BYTE] = _ProtocolErrorSpecificQueue.front();
+                ptrFrameMsg->can_byte_array[ERROR_SPECIFIC_BYTE] =
+                _ProtocolErrorSpecificQueue.front();
                 _ProtocolErrorSpecificQueue.pop();
             }
             else
@@ -253,9 +272,11 @@ void MobileAppHandler::vAssemblyStateMachineFrame(
                 ptrFrameMsg->header.stamp = ros::Time::now();
                 ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
                 ptrFrameMsg->can_id = PROTOCOL_ERROR_FRAMES;
-                ptrFrameMsg->can_byte_array[ERROR_TYPE_BYTE] = _ManualErrorTypeQueue.front();
+                ptrFrameMsg->can_byte_array[ERROR_TYPE_BYTE] =
+                _ManualErrorTypeQueue.front();
                 _ManualErrorTypeQueue.pop();
-                ptrFrameMsg->can_byte_array[ERROR_SPECIFIC_BYTE] = _ManualErrorSpecificQueue.front();
+                ptrFrameMsg->can_byte_array[ERROR_SPECIFIC_BYTE] =
+                _ManualErrorSpecificQueue.front();
                 _ManualErrorSpecificQueue.pop();
             }
             else

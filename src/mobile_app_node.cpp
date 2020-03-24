@@ -42,7 +42,8 @@ int main(int argc, char **argv)
         bSimulation = false;
       }
     }
-    // Use this topic to communicate application events with the robot state machine
+    // Use this topic to communicate application events
+    // with the robot state machine
     ros::Publisher StateMachinePub = nh.advertise
     <agribot_msgs::AgribotMobileAppFrame>
     ("agribot/mobile_app_communication", 1000);
@@ -52,12 +53,14 @@ int main(int argc, char **argv)
     ("/cmd_vel_manual", 1);
     // Topic used to read the path name from task config file
     ros::Subscriber AppTaskChoosedEventsSub = nh.subscribe
-    ("/agribot/chosen_task_name", 1, vAppTaskChoosedEventCallback);
+    ("/agribot/chosen_task_name", 1,
+    vAppTaskChoosedEventCallback);
 
     if (bSimulation == true )
     {
       ros::Subscriber AppCommandsEventsSub = nh.subscribe
-      ("/agribot/app_commands_events_simulation", 1, vAppCommandsSimulationEventsCallback);
+      ("/agribot/app_commands_events_simulation", 1,
+      vAppCommandsSimulationEventsCallback);
     }
 
     ros::Rate loop_rate(10);
@@ -93,7 +96,8 @@ int main(int argc, char **argv)
       {
           CommHandlerControl.vReceiveCanFrames();
           u8Status = CommHandlerControl.u8ParseCanFrames();
-          if ((u8Status&RECEIVED_MANUAL_STEERING) == RECEIVED_MANUAL_STEERING)
+          if ((u8Status&RECEIVED_MANUAL_STEERING) ==
+              RECEIVED_MANUAL_STEERING)
           {
               ManualSteeringMsg.linear_velocity =
                 CommHandlerControl.fGetManualLinearVelo();
@@ -101,24 +105,31 @@ int main(int argc, char **argv)
                 CommHandlerControl.fGetManualRadius();
               PublishManualSteering.publish(ManualSteeringMsg);
 
-              CommHandlerControl.vAssemblyStateMachineFrame(&FrameMsg, RECEIVED_MANUAL_STEERING);
+              CommHandlerControl.vAssemblyStateMachineFrame(
+                                        &FrameMsg, RECEIVED_MANUAL_STEERING);
               StateMachinePub.publish(FrameMsg);
           }
-          if ((u8Status&RECEIVED_MANUAL_MODE_COMF) == RECEIVED_MANUAL_MODE_COMF)
+          if ((u8Status&RECEIVED_MANUAL_MODE_COMF) ==
+              RECEIVED_MANUAL_MODE_COMF)
           {
-              CommHandlerControl.vAssemblyStateMachineFrame(&FrameMsg, RECEIVED_MANUAL_MODE_COMF);
+              CommHandlerControl.vAssemblyStateMachineFrame(
+                                      &FrameMsg, RECEIVED_MANUAL_MODE_COMF);
               StateMachinePub.publish(FrameMsg);
           }
-          if ((u8Status&RECEIVED_AUTO_STEERING) == RECEIVED_AUTO_STEERING)
+          if ((u8Status&RECEIVED_AUTO_STEERING) ==
+              RECEIVED_AUTO_STEERING)
           {
-              CommHandlerControl.vAssemblyStateMachineFrame(&FrameMsg, RECEIVED_AUTO_STEERING);
+              CommHandlerControl.vAssemblyStateMachineFrame(
+                                        &FrameMsg, RECEIVED_AUTO_STEERING);
               StateMachinePub.publish(FrameMsg);
           }
-          if ((u8Status&RECEIVED_PROTOCOL_ERROR) == RECEIVED_PROTOCOL_ERROR)
+          if ((u8Status&RECEIVED_PROTOCOL_ERROR) ==
+              RECEIVED_PROTOCOL_ERROR)
           {
               while (true)
               {
-                CommHandlerControl.vAssemblyStateMachineFrame(&FrameMsg, RECEIVED_PROTOCOL_ERROR);
+                CommHandlerControl.vAssemblyStateMachineFrame(
+                                      &FrameMsg, RECEIVED_PROTOCOL_ERROR);
                 if (FrameMsg.can_id == 0)
                   break;
                 else
@@ -130,7 +141,8 @@ int main(int argc, char **argv)
           {
               while (true)
               {
-                CommHandlerControl.vAssemblyStateMachineFrame(&FrameMsg, RECEIVED_MANUALSTEERING_ERROR);
+                CommHandlerControl.vAssemblyStateMachineFrame(
+                                &FrameMsg, RECEIVED_MANUALSTEERING_ERROR);
                 if (FrameMsg.can_id == 0)
                   break;
                 else
@@ -139,7 +151,8 @@ int main(int argc, char **argv)
           }
           if ((u8Status&RECEIVED_CONFIGURATION) == RECEIVED_CONFIGURATION)
           {
-            CommHandlerControl.vAssemblyStateMachineFrame(&FrameMsg, RECEIVED_CONFIGURATION);
+            CommHandlerControl.vAssemblyStateMachineFrame(
+                                      &FrameMsg, RECEIVED_CONFIGURATION);
             StateMachinePub.publish(FrameMsg);
           }
       }

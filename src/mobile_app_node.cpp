@@ -12,14 +12,14 @@
 
 MobileAppHandler CommHandlerControl(USED_CAN);
 
-void app_commands_simulation_eventsCallback(const agribot_msgs::AgribotMobileAppFrame::ConstPtr& msg)
+void vAppCommandsSimulationEventsCallback(const agribot_msgs::AgribotMobileAppFrame::ConstPtr& ptrMsg)
 {
-  CommHandlerControl.setSimulationAppFrame(msg->can_id, msg->can_byte_array);
+  CommHandlerControl.vSetSimulationAppFrame(ptrMsg->can_id, ptrMsg->can_byte_array);
 }
 
-void app_task_choosed_eventCallback(const std_msgs::String::ConstPtr& msg)
+void vAppTaskChoosedEventCallback(const std_msgs::String::ConstPtr& ptrMsg)
 {
-  CommHandlerControl.setChosenTask(msg->data);
+  CommHandlerControl.vSetChosenTask(ptrMsg->data);
 }
 
 int main(int argc, char **argv)
@@ -28,59 +28,59 @@ int main(int argc, char **argv)
     std::string name_tmp = "";
     ros::init(argc, argv, "hal_mobile_app");
     ros::NodeHandle nh;
-    bool sim_param;
-    bool simulation = false;
-    if (nh.getParam("/agribot_commander/sim", sim_param))
+    bool bSimParam;
+    bool bSimulation = false;
+    if (nh.getParam("/agribot_commander/sim", bSimParam))
     {
-      if (sim_param)
+      if (bSimParam)
       {
-       simulation = true;
+       bSimulation = true;
       }
       else
       {
-        simulation = false;
+        bSimulation = false;
       }
     }
     //Use this topic to communicate application events with the robot state machine
-    ros::Publisher state_machine_pub = nh.advertise<agribot_msgs::AgribotMobileAppFrame>("agribot/mobile_app_communication", 1000);
+    ros::Publisher StateMachinePub = nh.advertise<agribot_msgs::AgribotMobileAppFrame>("agribot/mobile_app_communication", 1000);
     //Publish cmd_vel_manual from application commands
     ros::Publisher PublishManualSteering = nh.advertise<agribot_msgs::AgribotManualControl>("/cmd_vel_manual",1);
     //Topic used to read the path name from task config file
-    ros::Subscriber app_task_choosed_events_sub = nh.subscribe("/agribot/chosen_task_name", 1, app_task_choosed_eventCallback);
+    ros::Subscriber AppTaskChoosedEventsSub = nh.subscribe("/agribot/chosen_task_name", 1, vAppTaskChoosedEventCallback);
 
-    if (simulation == true )
+    if (bSimulation == true )
     {
-      ros::Subscriber app_commands_events_sub = nh.subscribe("/agribot/app_commands_events_simulation", 1, app_commands_simulation_eventsCallback);
+      ros::Subscriber AppCommandsEventsSub = nh.subscribe("/agribot/app_commands_events_simulation", 1, vAppCommandsSimulationEventsCallback);
     }
 
     ros::Rate loop_rate(10);
 
-    agribot_msgs::AgribotMobileAppFrame frame_msg;
+    agribot_msgs::AgribotMobileAppFrame FrameMsg;
     agribot_msgs::AgribotManualControl ManualSteeringMsg;
     
     uint8_t u8Status=0x00;
 
     while (ros::ok())
     {
-      name_tmp = CommHandlerControl.strgetTaskName();
+      name_tmp = CommHandlerControl.strGetTaskName();
       if (name_tmp != "")
       {
         nh.setParam("/agribot/chosen_task_name", name_tmp);
       }
 
       //If used in simulation
-      if (simulation == true )
+      if (bSimulation == true )
       {
           CommHandlerControl.update();
 
-          if (CommHandlerControl.dataPendingSimulation())
+          if (CommHandlerControl.bDataPendingSimulation())
           {
 
-              CommHandlerControl.createStateMachineAppFrame(&frame_msg);
+              CommHandlerControl.vCreateSimStateMachineAppFrame(&FrameMsg);
 
-              ROS_INFO("%s", frame_msg.header.frame_id.c_str());
+              ROS_INFO("%s", FrameMsg.header.frame_id.c_str());
 
-              state_machine_pub.publish(frame_msg);
+              StateMachinePub.publish(FrameMsg);
 
           }
       } 
@@ -94,46 +94,47 @@ int main(int argc, char **argv)
               ManualSteeringMsg.linear_velocity = CommHandlerControl.fGetManualLinearVelo();
               ManualSteeringMsg.circle_radius = CommHandlerControl.fGetManualRadius();
               PublishManualSteering.publish(ManualSteeringMsg);
-              frame_msg.header.stamp = ros::Time::now();
-              frame_msg.header.frame_id = "mobile_app_commands_link";
-              frame_msg.can_id = 53;
-              frame_msg.can_byte_array[0] = 10;
-              state_machine_pub.publish(frame_msg);
+
+              CommHandlerControl.vAssemblyStateMachineFrame(&FrameMsg, RECEIVED_MANUAL_STEERING);
+              StateMachinePub.publish(FrameMsg);
           }
           if((u8Status&RECEIVED_MANUAL_MODE_COMF) == RECEIVED_MANUAL_MODE_COMF)
           {
-              frame_msg.header.stamp = ros::Time::now();
-              frame_msg.header.frame_id = "mobile_app_commands_link";
-              frame_msg.can_id = 10;
-              frame_msg.can_byte_array[0] = 10;
-              state_machine_pub.publish(frame_msg);
+              CommHandlerControl.vAssemblyStateMachineFrame(&FrameMsg, RECEIVED_MANUAL_MODE_COMF);
+              StateMachinePub.publish(FrameMsg);
           }
           if((u8Status&RECEIVED_AUTO_STEERING) == RECEIVED_AUTO_STEERING)
           {
-              frame_msg.header.stamp = ros::Time::now();
-              frame_msg.header.frame_id = "mobile_app_commands_link";
-              frame_msg.can_id = 31;
-              frame_msg.can_byte_array[0] = 10;
-              state_machine_pub.publish(frame_msg);
+              CommHandlerControl.vAssemblyStateMachineFrame(&FrameMsg, RECEIVED_AUTO_STEERING);
+              StateMachinePub.publish(FrameMsg);
           }
           if((u8Status&RECEIVED_PROTOCOL_ERROR) == RECEIVED_PROTOCOL_ERROR)
           {
-              frame_msg.header.stamp = ros::Time::now();
-              frame_msg.header.frame_id = "mobile_app_commands_link";
-              frame_msg.can_id = 200;
-              frame_msg.can_byte_array[0] = 0x00;
-              frame_msg.can_byte_array[1] = 0x0F;
-              state_machine_pub.publish(frame_msg);
+              while(true)
+              {
+                CommHandlerControl.vAssemblyStateMachineFrame(&FrameMsg, RECEIVED_PROTOCOL_ERROR);
+                if(FrameMsg.can_id == 0)
+                  break;
+                else
+                  StateMachinePub.publish(FrameMsg);
+              }
           }
           if((u8Status&RECEIVED_MANUALSTEERING_ERROR) == RECEIVED_MANUALSTEERING_ERROR)
           {
-              frame_msg.header.stamp = ros::Time::now();
-              frame_msg.header.frame_id = "mobile_app_commands_link";
-              frame_msg.can_id = 201;
-              frame_msg.can_byte_array[0] = 0x00;
-              frame_msg.can_byte_array[1] = 0x0F;
+              while(true)
+              {
+                CommHandlerControl.vAssemblyStateMachineFrame(&FrameMsg, RECEIVED_MANUALSTEERING_ERROR);
+                if(FrameMsg.can_id == 0)
+                  break;
+                else
+                  StateMachinePub.publish(FrameMsg);
+              }
           }
-          
+          if((u8Status&RECEIVED_CONFIGURATION) == RECEIVED_CONFIGURATION)
+          {
+            CommHandlerControl.vAssemblyStateMachineFrame(&FrameMsg, RECEIVED_CONFIGURATION);
+            StateMachinePub.publish(FrameMsg);
+          }
       }
       ros::spinOnce();
 

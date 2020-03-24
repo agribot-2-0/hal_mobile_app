@@ -14,6 +14,7 @@
 #define RECEIVED_AUTO_STEERING 0x10
 #define RECEIVED_PROTOCOL_ERROR 0x20
 #define RECEIVED_MANUALSTEERING_ERROR 0x40
+#define RECEIVED_CONFIGURATION 0x80
 
 class MobileAppHandler
 {
@@ -21,18 +22,37 @@ class MobileAppHandler
     std::queue<can_frame> _FramesQueue;
     double _fManualLinearVelo = 0;
     double _fRadius = 0;
+    std::queue<uint8_t> _ProtocolErrorTypeQueue;
+    std::queue<uint8_t> _ProtocolErrorSpecificQueue;
+    std::queue<uint8_t> _ManualErrorTypeQueue;
+    std::queue<uint8_t> _ManualErrorSpecificQueue;
     int16_t i16GetTwoBytes(uint8_t u8StartBit, can_frame CanFrame);
 
-    //simulation part
-    bool fresh_data;
-    int command_id;
-    int8_t msg_byte_array[8];
-    std::string chosen_task; 
+    //configuration data
+    bool bReceivedCompleteConfig;
+    uint uFrontToolAngle;
+    uint uFrontToolLength;
+    uint8_t u8FrontToolValveRedFlow;
+    uint8_t u8FrontToolValveGreenFlow;
+    uint8_t u8FrontToolValveBlueFlow;
+    uint8_t u8FrontToolMotorSpeed;
+    uint uBackToolAngle;
+    uint uBackToolLength;
+    uint8_t u8BackToolValveRedFlow;
+    uint8_t u8BackToolValveGreenFlow;
+    uint8_t u8BackToolValveBlueFlow;
+    uint8_t u8BackToolMotorSpeed;
 
-    float front_linear;
-    float front_angular;
-    float back_linear;
-    float back_angular;
+    //simulation part
+    bool bFreshData;
+    int iCommandId;
+    int8_t msg_byte_array[8];
+    std::string strChosenTask; 
+
+    float fFrontLinear;
+    float fFrontAngular;
+    float fBackLinear;
+    float fBackAngular;
 
 
 public:
@@ -42,6 +62,7 @@ public:
     uint8_t u8ParseCanFrames();
     float fGetManualRadius();
     float fGetManualLinearVelo();
+    void vAssemblyStateMachineFrame(agribot_msgs::AgribotMobileAppFrame* pFrameMsg, uint uFrameType);
 
     virtual int configure();
     virtual bool startup();
@@ -50,17 +71,17 @@ public:
     virtual bool cleanup();
 
     //read the chosen task name 
-    void setChosenTask(std::string task_name);
+    void vSetChosenTask(std::string strTaskName);
     //returns the chosen task name 
-    std::string strgetTaskName();
+    std::string strGetTaskName();
 
     //simulation part
-    void createStateMachineAppFrame(agribot_msgs::AgribotMobileAppFrame* frame);
+    void vCreateSimStateMachineAppFrame(agribot_msgs::AgribotMobileAppFrame* pFrame);
 
-    void setSimulationAppFrame(const uint32_t rec_frame_ID, const boost::array<unsigned char, 8> rec_bytes);
-    void setSimulationMoveFrame(float fr_lin, float fr_ang, float bk_lin, float bk_ang);
+    void vSetSimulationAppFrame(const uint32_t uRecFrameID, const boost::array<unsigned char, 8> _chRecBytes);
+    void vSetSimulationMoveFrame(float fFrLin, float fFrAng, float fBkLin, float fBkAng);
 
 
     //check if new simulation frame has been received
-    bool dataPendingSimulation();
+    bool bDataPendingSimulation();
 };

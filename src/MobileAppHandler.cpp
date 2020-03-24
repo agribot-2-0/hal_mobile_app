@@ -11,6 +11,7 @@
 #define PROTOCOL_AUTOMATIC_STEERING 0x01F
 #define PROTOCOL_ERROR_FRAMES 0x0C8
 #define PROTOCOL_MAN_ERROR_FRAMES 0x0C9
+#define PROTOCOL_CONFIGURATION_FRAME 0x96
 
 #define LIN_VELO_SIGN_BYTE 0
 #define DIRECTION_SIGN_BYTE 1
@@ -18,6 +19,20 @@
 #define LIN_VELO_BYTE 4
 #define RADIUS_PARSE_CONST 10
 #define LIN_VELO_PARSE_CONST 100
+
+#define CONFIG_TYPE_BYTE 0
+#define CONFIG_FRONT_TOOL_AL 1
+#define CONFIG_FRONT_TOOL_VM 2
+#define CONFIG_BACK_TOOL_AL 3
+#define CONFIG_BACK_TOOL_VM 4
+
+#define CONFIG_TOOL_ANGLE_BYTE 1
+#define CONFIG_TOOL_LENGTH_BYTE 3
+
+#define CONFIG_TOOL_VALVE_R_BYTE 1
+#define CONFIG_TOOL_VALVE_G_BYTE 2
+#define CONFIG_TOOL_VALVE_B_BYTE 3
+#define CONFIG_TOOL_MOTOR_BYTE 4
 
 #define MAX_RADIUS 10
 #define MIN_RADIUS 1.5
@@ -28,21 +43,39 @@
 #define BACKWARD -1
 #define FORWARD 1
 
+#define HEADER_STRING_MOB_APP_FRAME "mobile_app_commands_link"
+#define ERROR_TYPE_BYTE 0
+#define ERROR_SPECIFIC_BYTE 1
+
+
 MobileAppHandler::MobileAppHandler(char* pchCanChannel)
 {
     _CanHandler.iInitialize(pchCanChannel);
     _fRadius=0;
     _fManualLinearVelo=0;
 
-    command_id = 0;
-    fresh_data = false;
-    chosen_task = "";
+    iCommandId = 0;
+    bFreshData = false;
+    strChosenTask = "";
     int i = 0;
     while(i<8)
     {
         msg_byte_array[i] = 20;
         i++;
     }
+    bReceivedCompleteConfig = false;
+    uFrontToolAngle = 0;
+    uFrontToolLength = 0;
+    u8FrontToolValveRedFlow = 0;
+    u8FrontToolValveGreenFlow = 0;
+    u8FrontToolValveBlueFlow = 0;
+    u8FrontToolMotorSpeed = 0;
+    uBackToolAngle = 0;
+    uBackToolLength = 0;
+    u8BackToolValveRedFlow = 0;
+    u8BackToolValveGreenFlow = 0;
+    u8BackToolValveBlueFlow = 0;
+    u8BackToolMotorSpeed = 0;
 }
 
 void MobileAppHandler::vReceiveCanFrames()
@@ -100,15 +133,128 @@ uint8_t MobileAppHandler::u8ParseCanFrames()
         }
         else if((PROTOCOL_ERROR_FRAMES&ADDR_MASK) == (message.can_id&ADDR_MASK))
         {
+            _ProtocolErrorTypeQueue.push(message.data[ERROR_TYPE_BYTE]);
+            _ProtocolErrorSpecificQueue.push(message.data[ERROR_SPECIFIC_BYTE]);
             u8Status |= RECEIVED_PROTOCOL_ERROR;
         }
         else if((PROTOCOL_MAN_ERROR_FRAMES&ADDR_MASK) == (message.can_id&ADDR_MASK))
         {
+            _ManualErrorTypeQueue.push(message.data[ERROR_TYPE_BYTE]);
+            _ManualErrorSpecificQueue.push(message.data[ERROR_SPECIFIC_BYTE]);
             u8Status |= RECEIVED_MANUALSTEERING_ERROR;
-        } 
+        } else if((PROTOCOL_CONFIGURATION_FRAME&ADDR_MASK) == (message.can_id&ADDR_MASK))
+        {
+            if(message.data[CONFIG_TYPE_BYTE] == CONFIG_FRONT_TOOL_AL)
+            {
+                uFrontToolAngle = uint (i16GetTwoBytes(CONFIG_TOOL_ANGLE_BYTE, message));
+                uFrontToolLength = uint (i16GetTwoBytes(CONFIG_TOOL_LENGTH_BYTE, message));
+            } 
+            else if(message.data[CONFIG_TYPE_BYTE] == CONFIG_FRONT_TOOL_VM)
+            {
+                u8FrontToolValveRedFlow = message.data[CONFIG_TOOL_VALVE_R_BYTE];
+                u8FrontToolValveGreenFlow = message.data[CONFIG_TOOL_VALVE_G_BYTE];
+                u8FrontToolValveBlueFlow = message.data[CONFIG_TOOL_VALVE_B_BYTE];
+                u8FrontToolMotorSpeed = message.data[CONFIG_TOOL_MOTOR_BYTE];
+            } 
+            else if(message.data[CONFIG_TYPE_BYTE] == CONFIG_BACK_TOOL_AL)
+            {
+                uBackToolAngle = uint (i16GetTwoBytes(CONFIG_TOOL_ANGLE_BYTE, message));
+                uBackToolLength = uint (i16GetTwoBytes(CONFIG_TOOL_LENGTH_BYTE, message));
+            } 
+            else if(message.data[CONFIG_TYPE_BYTE] == CONFIG_BACK_TOOL_VM)
+            {
+                u8BackToolValveRedFlow = message.data[CONFIG_TOOL_VALVE_R_BYTE];
+                u8BackToolValveGreenFlow = message.data[CONFIG_TOOL_VALVE_G_BYTE];
+                u8BackToolValveBlueFlow = message.data[CONFIG_TOOL_VALVE_B_BYTE];
+                u8BackToolMotorSpeed = message.data[CONFIG_TOOL_MOTOR_BYTE];
+            }
+            u8Status |= RECEIVED_CONFIGURATION;
+        }
         _FramesQueue.pop();
     }
     return u8Status;
+}
+
+void MobileAppHandler::vAssemblyStateMachineFrame(agribot_msgs::AgribotMobileAppFrame* ptrFrameMsg, uint uFrameType)
+{
+    switch(uFrameType)
+    {
+        case RECEIVED_MANUAL_STEERING:
+            ptrFrameMsg->header.stamp = ros::Time::now();
+            ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
+            ptrFrameMsg->can_id = PROTOCOL_ARC_FRAME;
+            if (_fManualLinearVelo >= 0)
+                ptrFrameMsg->can_byte_array[LIN_VELO_SIGN_BYTE] = 1;
+            else
+                ptrFrameMsg->can_byte_array[LIN_VELO_SIGN_BYTE] = 0;
+            ptrFrameMsg->can_byte_array[LIN_VELO_BYTE] = ((abs(int(_fManualLinearVelo*100)))&0xFF00)>>8;
+            ptrFrameMsg->can_byte_array[LIN_VELO_BYTE+1] = (abs(int(_fManualLinearVelo*100)))&0x00FF;
+            if (_fRadius >= 0)
+                ptrFrameMsg->can_byte_array[DIRECTION_SIGN_BYTE] = 1;
+            else
+                ptrFrameMsg->can_byte_array[DIRECTION_SIGN_BYTE] = 0;
+            ptrFrameMsg->can_byte_array[RADIUS_BYTE] = ((abs(int(_fRadius*10)))&0xFF00)>>8;
+            ptrFrameMsg->can_byte_array[RADIUS_BYTE+1] = (abs(int(_fRadius*10)))&0x00FF;
+            break;
+        case RECEIVED_HANDSHAKE:
+            ptrFrameMsg->header.stamp = ros::Time::now();
+            ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
+            ptrFrameMsg->can_id = PROTOCOL_HANDSHAKE_FRAME;
+            ptrFrameMsg->can_byte_array[0] = 10; //dummy load
+            break;
+        case RECEIVED_MANUAL_MODE_COMF:
+            ptrFrameMsg->header.stamp = ros::Time::now();
+            ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
+            ptrFrameMsg->can_id = PROTOCOL_MANUALSTEERING;
+            ptrFrameMsg->can_byte_array[0] = 10;
+            break;
+        case RECEIVED_AUTO_STEERING:
+            ptrFrameMsg->header.stamp = ros::Time::now();
+            ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
+            ptrFrameMsg->can_id = PROTOCOL_AUTOMATIC_STEERING;
+            ptrFrameMsg->can_byte_array[0] = 10;
+            break;
+        case RECEIVED_PROTOCOL_ERROR:
+            if(!_ProtocolErrorTypeQueue.empty())
+            {
+                ptrFrameMsg->header.stamp = ros::Time::now();
+                ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
+                ptrFrameMsg->can_id = PROTOCOL_ERROR_FRAMES;
+                ptrFrameMsg->can_byte_array[ERROR_TYPE_BYTE] = _ProtocolErrorTypeQueue.front();
+                _ProtocolErrorTypeQueue.pop();
+                ptrFrameMsg->can_byte_array[ERROR_SPECIFIC_BYTE] = _ProtocolErrorSpecificQueue.front();
+                _ProtocolErrorSpecificQueue.pop();
+            }
+            else
+            {
+                ptrFrameMsg->can_id = 0;
+            }
+            break;    
+        case RECEIVED_MANUALSTEERING_ERROR:
+            if(!_ManualErrorTypeQueue.empty())
+            {
+                ptrFrameMsg->header.stamp = ros::Time::now();
+                ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
+                ptrFrameMsg->can_id = PROTOCOL_ERROR_FRAMES;
+                ptrFrameMsg->can_byte_array[ERROR_TYPE_BYTE] = _ManualErrorTypeQueue.front();
+                _ManualErrorTypeQueue.pop();
+                ptrFrameMsg->can_byte_array[ERROR_SPECIFIC_BYTE] = _ManualErrorSpecificQueue.front();
+                _ManualErrorSpecificQueue.pop();
+            }
+            else
+            {
+                ptrFrameMsg->can_id = 0;
+            }
+            break;
+        case RECEIVED_CONFIGURATION:
+             ptrFrameMsg->can_id = PROTOCOL_CONFIGURATION_FRAME;
+             if (bReceivedCompleteConfig)
+                ptrFrameMsg->can_byte_array[CONFIG_TYPE_BYTE] = 100;
+             break;
+        default:
+            ptrFrameMsg->can_id = 0;
+            break;
+    }
 }
 
 float MobileAppHandler::fGetManualRadius()
@@ -121,70 +267,70 @@ float MobileAppHandler::fGetManualLinearVelo()
     return _fManualLinearVelo;
 }
 
-void MobileAppHandler::setSimulationAppFrame(const uint32_t rec_frame_ID, const boost::array<unsigned char, 8> rec_bytes)
+void MobileAppHandler::vSetSimulationAppFrame(const uint32_t uRecFrameID, const boost::array<unsigned char, 8> _chRecBytes)
 {
-    command_id=rec_frame_ID;
-    msg_byte_array[0]=rec_bytes[0];
-    msg_byte_array[1]=rec_bytes[1];
-    msg_byte_array[2]=rec_bytes[2];
-    msg_byte_array[3]=rec_bytes[3];
-    msg_byte_array[4]=rec_bytes[4];
-    msg_byte_array[5]=rec_bytes[5];
-    msg_byte_array[6]=rec_bytes[6];
-    msg_byte_array[7]=rec_bytes[7];
-    ROS_INFO("Received app event ID = [%d]", rec_frame_ID);
-    fresh_data=true;
+    iCommandId=uRecFrameID;
+    msg_byte_array[0]=_chRecBytes[0];
+    msg_byte_array[1]=_chRecBytes[1];
+    msg_byte_array[2]=_chRecBytes[2];
+    msg_byte_array[3]=_chRecBytes[3];
+    msg_byte_array[4]=_chRecBytes[4];
+    msg_byte_array[5]=_chRecBytes[5];
+    msg_byte_array[6]=_chRecBytes[6];
+    msg_byte_array[7]=_chRecBytes[7];
+    ROS_INFO("Received app event ID = [%d]", uRecFrameID);
+    bFreshData=true;
 }
 
 //Method used to register and inform state machine about incoming msg
-void MobileAppHandler::setSimulationMoveFrame(float fr_lin, float fr_ang, float bk_lin, float bk_ang)
+void MobileAppHandler::vSetSimulationMoveFrame(float fFrLin, float fFrAng, float fBkLin, float fBkAng)
 {
-    if (!fresh_data)
+    if (!bFreshData)
     {
-        if (fr_lin != 0 && fr_ang != 0 && bk_lin != 0 && bk_ang != 0)
+        if (fFrLin != 0 && fFrAng != 0 && fBkLin != 0 && fBkAng != 0)
         {
-            command_id=53;
-            front_linear=fr_lin;
-            front_angular=fr_ang;
-            back_linear=bk_lin;
-            back_angular=bk_ang;
-            fresh_data=true;
-            ROS_INFO("Received only move commands ID = [%d]", command_id);
+            iCommandId=53;
+            fFrontLinear=fFrLin;
+            fFrontAngular=fFrAng;
+            fBackLinear=fBkLin;
+            fBackAngular=fBkAng;
+            bFreshData=true;
+            ROS_INFO("Received only move commands ID = [%d]", iCommandId);
         }
     } 
 }
 
-void MobileAppHandler::setChosenTask(std::string task_name)
+void MobileAppHandler::vSetChosenTask(std::string strTaskName)
 {
-    chosen_task = task_name;
+    strChosenTask = strTaskName;
 }
 
-void MobileAppHandler::createStateMachineAppFrame(agribot_msgs::AgribotMobileAppFrame* frame)
+void MobileAppHandler::vCreateSimStateMachineAppFrame(agribot_msgs::AgribotMobileAppFrame* ptrFrame)
 {
-    if (fresh_data)
+    if (bFreshData)
     {
-        frame->header.stamp = ros::Time::now();
-        frame->header.frame_id = "mobile_app_commands_link";
-        frame->can_id = command_id;
-        frame->can_byte_array[0] = msg_byte_array[0];
-        frame->can_byte_array[1] = msg_byte_array[1];
-        frame->can_byte_array[2] = msg_byte_array[2];
-        frame->can_byte_array[3] = msg_byte_array[3];
-        frame->can_byte_array[4] = msg_byte_array[4];
-        frame->can_byte_array[5] = msg_byte_array[5];
-        frame->can_byte_array[6] = msg_byte_array[6];
-        frame->can_byte_array[7] = msg_byte_array[7];
+        ptrFrame->header.stamp = ros::Time::now();
+        ptrFrame->header.frame_id = "mobile_app_commands_link";
+        ptrFrame->can_id = iCommandId;
+        ptrFrame->can_byte_array[0] = msg_byte_array[0];
+        ptrFrame->can_byte_array[1] = msg_byte_array[1];
+        ptrFrame->can_byte_array[2] = msg_byte_array[2];
+        ptrFrame->can_byte_array[3] = msg_byte_array[3];
+        ptrFrame->can_byte_array[4] = msg_byte_array[4];
+        ptrFrame->can_byte_array[5] = msg_byte_array[5];
+        ptrFrame->can_byte_array[6] = msg_byte_array[6];
+        ptrFrame->can_byte_array[7] = msg_byte_array[7];
 
-        fresh_data = false;
+        bFreshData = false;
     }
 }
 
 
-std::string MobileAppHandler::strgetTaskName()
+std::string MobileAppHandler::strGetTaskName()
 {
-    std::string temp = chosen_task;
-    chosen_task="";
-    return temp;
+    std::string strTemp = strChosenTask;
+    strChosenTask="";
+    return strTemp;
 }
 
 int MobileAppHandler::configure()
@@ -212,7 +358,7 @@ bool MobileAppHandler::cleanup()
     return true;
 }
 
-bool MobileAppHandler::dataPendingSimulation()
+bool MobileAppHandler::bDataPendingSimulation()
 {
-    return fresh_data;
+    return bFreshData;
 }

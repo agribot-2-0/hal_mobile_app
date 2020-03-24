@@ -1,11 +1,11 @@
 #pragma once
 
+#include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_common/Can.h>
 #include <queue>
 #include <cmath>
-#include <agribot_msgs/AgribotMobileAppFrame.h>
-#include <boost/array.hpp>
 #include <string>
+#include <boost/array.hpp>
 
 #define RECEIVED_HANDSHAKE 0x01
 #define RECEIVED_HEARTBEAT 0x02
@@ -55,14 +55,16 @@ class MobileAppHandler
     float fBackAngular;
 
 
-public:
-    MobileAppHandler(char* pchCanChannel);
+ public:
+    explicit MobileAppHandler(char* pchCanChannel);
     ~MobileAppHandler();
     void vReceiveCanFrames();
     uint8_t u8ParseCanFrames();
     float fGetManualRadius();
     float fGetManualLinearVelo();
-    void vAssemblyStateMachineFrame(agribot_msgs::AgribotMobileAppFrame* pFrameMsg, uint uFrameType);
+    void vAssemblyStateMachineFrame(
+        agribot_msgs::AgribotMobileAppFrame* pFrameMsg,
+        uint uFrameType);
 
     virtual int configure();
     virtual bool startup();
@@ -76,10 +78,13 @@ public:
     std::string strGetTaskName();
 
     //simulation part
-    void vCreateSimStateMachineAppFrame(agribot_msgs::AgribotMobileAppFrame* pFrame);
+    void vCreateSimStateMachineAppFrame(
+        agribot_msgs::AgribotMobileAppFrame* pFrame);
 
-    void vSetSimulationAppFrame(const uint32_t uRecFrameID, const boost::array<unsigned char, 8> _chRecBytes);
-    void vSetSimulationMoveFrame(float fFrLin, float fFrAng, float fBkLin, float fBkAng);
+    void vSetSimulationAppFrame(const uint32_t uRecFrameID,
+        const boost::array<unsigned char, 8> _chRecBytes);
+    void vSetSimulationMoveFrame(float fFrLin,
+        float fFrAng, float fBkLin, float fBkAng);
 
 
     //check if new simulation frame has been received

@@ -51,14 +51,14 @@
 MobileAppHandler::MobileAppHandler(char* pchCanChannel)
 {
     _CanHandler.iInitialize(pchCanChannel);
-    _fRadius=0;
-    _fManualLinearVelo=0;
+    _fRadius = 0;
+    _fManualLinearVelo = 0;
 
     iCommandId = 0;
     bFreshData = false;
     strChosenTask = "";
     int i = 0;
-    while(i<8)
+    while (i < 8)
     {
         msg_byte_array[i] = 20;
         i++;
@@ -81,7 +81,7 @@ MobileAppHandler::MobileAppHandler(char* pchCanChannel)
 void MobileAppHandler::vReceiveCanFrames()
 {
     can_frame message;
-    while(_CanHandler.bReceiveFrame(&message))
+    while (_CanHandler.bReceiveFrame(&message))
     {
         _FramesQueue.push(message);
     }
@@ -89,79 +89,95 @@ void MobileAppHandler::vReceiveCanFrames()
 
 MobileAppHandler::~MobileAppHandler()
 {
-    while(!_FramesQueue.empty())
+    while (!_FramesQueue.empty())
     {
         _FramesQueue.pop();
     }
 }
 
-int16_t MobileAppHandler::i16GetTwoBytes(uint8_t u8StartBit, can_frame CanFrame)
+int16_t MobileAppHandler::i16GetTwoBytes(
+    uint8_t u8StartBit,
+     can_frame CanFrame)
 {
-    return ((int16_t)CanFrame.data[u8StartBit])<<8 |((int16_t)CanFrame.data[u8StartBit+1]);
+    return ((int16_t)CanFrame.data[u8StartBit]) <<8 |
+           ((int16_t)CanFrame.data[u8StartBit+1]);
 }
 
 uint8_t MobileAppHandler::u8ParseCanFrames()
 {
     uint8_t u8Status = 0;
     can_frame message;
-    while(!_FramesQueue.empty())
+    while (!_FramesQueue.empty())
     {
         message = _FramesQueue.front();
-        if((PROTOCOL_ARC_FRAME&ADDR_MASK) == (message.can_id&ADDR_MASK))
+        if ((PROTOCOL_ARC_FRAME&ADDR_MASK) == (message.can_id&ADDR_MASK))
         {
-            int8_t i8VeloSign = message.data[LIN_VELO_SIGN_BYTE] == 0 ? BACKWARD:FORWARD;
-            int8_t i8DirectionSign = message.data[DIRECTION_SIGN_BYTE] == 0 ? RIGHT_ARCH:LEFT_ARCH;
-            _fManualLinearVelo = ((float)(i16GetTwoBytes(LIN_VELO_BYTE, message))*i8VeloSign)/LIN_VELO_PARSE_CONST;
-            _fRadius = ((float)(i16GetTwoBytes(RADIUS_BYTE, message))*i8DirectionSign)/RADIUS_PARSE_CONST;
+            int8_t i8VeloSign =
+                message.data[LIN_VELO_SIGN_BYTE] == 0 ? BACKWARD:FORWARD;
+            int8_t i8DirectionSign = message.data[DIRECTION_SIGN_BYTE]
+                == 0 ? RIGHT_ARCH:LEFT_ARCH;
+            _fManualLinearVelo =
+                (static_cast<float>(i16GetTwoBytes(LIN_VELO_BYTE, message))*
+                i8VeloSign) / LIN_VELO_PARSE_CONST;
+            _fRadius = (static_cast<float>
+                (i16GetTwoBytes(RADIUS_BYTE, message)) * i8DirectionSign)
+                / RADIUS_PARSE_CONST;
             u8Status |= RECEIVED_MANUAL_STEERING;
         }
-        else if((PROTOCOL_HANDSHAKE_FRAME&ADDR_MASK) == (message.can_id&ADDR_MASK))
+        else if ((PROTOCOL_HANDSHAKE_FRAME&ADDR_MASK) ==
+                 (message.can_id&ADDR_MASK))
         {
             u8Status |= RECEIVED_HANDSHAKE;
-        } 
-        else if((PROTOCOL_HB_FRAME&ADDR_MASK) == (message.can_id&ADDR_MASK))
+        }
+        else if ((PROTOCOL_HB_FRAME&ADDR_MASK) ==
+                 (message.can_id&ADDR_MASK))
         {
             u8Status |= RECEIVED_HEARTBEAT;
         }
-        else if((PROTOCOL_MANUALSTEERING&ADDR_MASK) == (message.can_id&ADDR_MASK))
+        else if ((PROTOCOL_MANUALSTEERING&ADDR_MASK) ==
+                 (message.can_id&ADDR_MASK))
         {
             u8Status |= RECEIVED_MANUAL_MODE_COMF;
         }
-        else if((PROTOCOL_AUTOMATIC_STEERING&ADDR_MASK) == (message.can_id&ADDR_MASK))
+        else if ((PROTOCOL_AUTOMATIC_STEERING&ADDR_MASK) ==
+                 (message.can_id&ADDR_MASK))
         {
             u8Status |= RECEIVED_AUTO_STEERING;
         }
-        else if((PROTOCOL_ERROR_FRAMES&ADDR_MASK) == (message.can_id&ADDR_MASK))
+        else if ((PROTOCOL_ERROR_FRAMES&ADDR_MASK) ==
+                 (message.can_id&ADDR_MASK))
         {
             _ProtocolErrorTypeQueue.push(message.data[ERROR_TYPE_BYTE]);
             _ProtocolErrorSpecificQueue.push(message.data[ERROR_SPECIFIC_BYTE]);
             u8Status |= RECEIVED_PROTOCOL_ERROR;
         }
-        else if((PROTOCOL_MAN_ERROR_FRAMES&ADDR_MASK) == (message.can_id&ADDR_MASK))
+        else if ((PROTOCOL_MAN_ERROR_FRAMES&ADDR_MASK) ==
+                 (message.can_id&ADDR_MASK))
         {
             _ManualErrorTypeQueue.push(message.data[ERROR_TYPE_BYTE]);
             _ManualErrorSpecificQueue.push(message.data[ERROR_SPECIFIC_BYTE]);
             u8Status |= RECEIVED_MANUALSTEERING_ERROR;
-        } else if((PROTOCOL_CONFIGURATION_FRAME&ADDR_MASK) == (message.can_id&ADDR_MASK))
+        }
+        else if ((PROTOCOL_CONFIGURATION_FRAME&ADDR_MASK) == (message.can_id&ADDR_MASK))
         {
-            if(message.data[CONFIG_TYPE_BYTE] == CONFIG_FRONT_TOOL_AL)
+            if (message.data[CONFIG_TYPE_BYTE] == CONFIG_FRONT_TOOL_AL)
             {
-                uFrontToolAngle = uint (i16GetTwoBytes(CONFIG_TOOL_ANGLE_BYTE, message));
-                uFrontToolLength = uint (i16GetTwoBytes(CONFIG_TOOL_LENGTH_BYTE, message));
-            } 
-            else if(message.data[CONFIG_TYPE_BYTE] == CONFIG_FRONT_TOOL_VM)
+                uFrontToolAngle = static_cast<uint>(i16GetTwoBytes(CONFIG_TOOL_ANGLE_BYTE, message));
+                uFrontToolLength = static_cast<uint>(i16GetTwoBytes(CONFIG_TOOL_LENGTH_BYTE, message));
+            }
+            else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_FRONT_TOOL_VM)
             {
                 u8FrontToolValveRedFlow = message.data[CONFIG_TOOL_VALVE_R_BYTE];
                 u8FrontToolValveGreenFlow = message.data[CONFIG_TOOL_VALVE_G_BYTE];
                 u8FrontToolValveBlueFlow = message.data[CONFIG_TOOL_VALVE_B_BYTE];
                 u8FrontToolMotorSpeed = message.data[CONFIG_TOOL_MOTOR_BYTE];
-            } 
-            else if(message.data[CONFIG_TYPE_BYTE] == CONFIG_BACK_TOOL_AL)
+            }
+            else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_BACK_TOOL_AL)
             {
-                uBackToolAngle = uint (i16GetTwoBytes(CONFIG_TOOL_ANGLE_BYTE, message));
-                uBackToolLength = uint (i16GetTwoBytes(CONFIG_TOOL_LENGTH_BYTE, message));
-            } 
-            else if(message.data[CONFIG_TYPE_BYTE] == CONFIG_BACK_TOOL_VM)
+                uBackToolAngle = static_cast<uint>(i16GetTwoBytes(CONFIG_TOOL_ANGLE_BYTE, message));
+                uBackToolLength = static_cast<uint>(i16GetTwoBytes(CONFIG_TOOL_LENGTH_BYTE, message));
+            }
+            else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_BACK_TOOL_VM)
             {
                 u8BackToolValveRedFlow = message.data[CONFIG_TOOL_VALVE_R_BYTE];
                 u8BackToolValveGreenFlow = message.data[CONFIG_TOOL_VALVE_G_BYTE];
@@ -175,9 +191,10 @@ uint8_t MobileAppHandler::u8ParseCanFrames()
     return u8Status;
 }
 
-void MobileAppHandler::vAssemblyStateMachineFrame(agribot_msgs::AgribotMobileAppFrame* ptrFrameMsg, uint uFrameType)
+void MobileAppHandler::vAssemblyStateMachineFrame(
+    agribot_msgs::AgribotMobileAppFrame* ptrFrameMsg, uint uFrameType)
 {
-    switch(uFrameType)
+    switch (uFrameType)
     {
         case RECEIVED_MANUAL_STEERING:
             ptrFrameMsg->header.stamp = ros::Time::now();
@@ -187,20 +204,20 @@ void MobileAppHandler::vAssemblyStateMachineFrame(agribot_msgs::AgribotMobileApp
                 ptrFrameMsg->can_byte_array[LIN_VELO_SIGN_BYTE] = 1;
             else
                 ptrFrameMsg->can_byte_array[LIN_VELO_SIGN_BYTE] = 0;
-            ptrFrameMsg->can_byte_array[LIN_VELO_BYTE] = ((abs(int(_fManualLinearVelo*100)))&0xFF00)>>8;
-            ptrFrameMsg->can_byte_array[LIN_VELO_BYTE+1] = (abs(int(_fManualLinearVelo*100)))&0x00FF;
+            ptrFrameMsg->can_byte_array[LIN_VELO_BYTE] = ((abs(static_cast<int>(_fManualLinearVelo*100)))&0xFF00)>>8;
+            ptrFrameMsg->can_byte_array[LIN_VELO_BYTE+1] = (abs(static_cast<int>(_fManualLinearVelo*100)))&0x00FF;
             if (_fRadius >= 0)
                 ptrFrameMsg->can_byte_array[DIRECTION_SIGN_BYTE] = 1;
             else
                 ptrFrameMsg->can_byte_array[DIRECTION_SIGN_BYTE] = 0;
-            ptrFrameMsg->can_byte_array[RADIUS_BYTE] = ((abs(int(_fRadius*10)))&0xFF00)>>8;
-            ptrFrameMsg->can_byte_array[RADIUS_BYTE+1] = (abs(int(_fRadius*10)))&0x00FF;
+            ptrFrameMsg->can_byte_array[RADIUS_BYTE] = ((abs(static_cast<int>(_fRadius*10)))&0xFF00)>>8;
+            ptrFrameMsg->can_byte_array[RADIUS_BYTE+1] = (abs(static_cast<int>(_fRadius*10)))&0x00FF;
             break;
         case RECEIVED_HANDSHAKE:
             ptrFrameMsg->header.stamp = ros::Time::now();
             ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
             ptrFrameMsg->can_id = PROTOCOL_HANDSHAKE_FRAME;
-            ptrFrameMsg->can_byte_array[0] = 10; //dummy load
+            ptrFrameMsg->can_byte_array[0] = 10;   // dummy load
             break;
         case RECEIVED_MANUAL_MODE_COMF:
             ptrFrameMsg->header.stamp = ros::Time::now();
@@ -215,7 +232,7 @@ void MobileAppHandler::vAssemblyStateMachineFrame(agribot_msgs::AgribotMobileApp
             ptrFrameMsg->can_byte_array[0] = 10;
             break;
         case RECEIVED_PROTOCOL_ERROR:
-            if(!_ProtocolErrorTypeQueue.empty())
+            if (!_ProtocolErrorTypeQueue.empty())
             {
                 ptrFrameMsg->header.stamp = ros::Time::now();
                 ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
@@ -229,9 +246,9 @@ void MobileAppHandler::vAssemblyStateMachineFrame(agribot_msgs::AgribotMobileApp
             {
                 ptrFrameMsg->can_id = 0;
             }
-            break;    
+            break;
         case RECEIVED_MANUALSTEERING_ERROR:
-            if(!_ManualErrorTypeQueue.empty())
+            if (!_ManualErrorTypeQueue.empty())
             {
                 ptrFrameMsg->header.stamp = ros::Time::now();
                 ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
@@ -267,37 +284,44 @@ float MobileAppHandler::fGetManualLinearVelo()
     return _fManualLinearVelo;
 }
 
-void MobileAppHandler::vSetSimulationAppFrame(const uint32_t uRecFrameID, const boost::array<unsigned char, 8> _chRecBytes)
+void MobileAppHandler::vSetSimulationAppFrame(
+    const uint32_t uRecFrameID,
+    const boost::array<unsigned char,
+     8> _chRecBytes)
 {
-    iCommandId=uRecFrameID;
-    msg_byte_array[0]=_chRecBytes[0];
-    msg_byte_array[1]=_chRecBytes[1];
-    msg_byte_array[2]=_chRecBytes[2];
-    msg_byte_array[3]=_chRecBytes[3];
-    msg_byte_array[4]=_chRecBytes[4];
-    msg_byte_array[5]=_chRecBytes[5];
-    msg_byte_array[6]=_chRecBytes[6];
-    msg_byte_array[7]=_chRecBytes[7];
+    iCommandId = uRecFrameID;
+    msg_byte_array[0] = _chRecBytes[0];
+    msg_byte_array[1] = _chRecBytes[1];
+    msg_byte_array[2] = _chRecBytes[2];
+    msg_byte_array[3] = _chRecBytes[3];
+    msg_byte_array[4] = _chRecBytes[4];
+    msg_byte_array[5] = _chRecBytes[5];
+    msg_byte_array[6] = _chRecBytes[6];
+    msg_byte_array[7] = _chRecBytes[7];
     ROS_INFO("Received app event ID = [%d]", uRecFrameID);
-    bFreshData=true;
+    bFreshData = true;
 }
 
-//Method used to register and inform state machine about incoming msg
-void MobileAppHandler::vSetSimulationMoveFrame(float fFrLin, float fFrAng, float fBkLin, float fBkAng)
+// Method used to register and inform state machine about incoming msg
+void MobileAppHandler::vSetSimulationMoveFrame(
+    float fFrLin,
+    float fFrAng,
+    float fBkLin,
+    float fBkAng)
 {
     if (!bFreshData)
     {
         if (fFrLin != 0 && fFrAng != 0 && fBkLin != 0 && fBkAng != 0)
         {
-            iCommandId=53;
-            fFrontLinear=fFrLin;
-            fFrontAngular=fFrAng;
-            fBackLinear=fBkLin;
-            fBackAngular=fBkAng;
-            bFreshData=true;
+            iCommandId = 53;
+            fFrontLinear = fFrLin;
+            fFrontAngular = fFrAng;
+            fBackLinear = fBkLin;
+            fBackAngular = fBkAng;
+            bFreshData = true;
             ROS_INFO("Received only move commands ID = [%d]", iCommandId);
         }
-    } 
+    }
 }
 
 void MobileAppHandler::vSetChosenTask(std::string strTaskName)
@@ -305,7 +329,8 @@ void MobileAppHandler::vSetChosenTask(std::string strTaskName)
     strChosenTask = strTaskName;
 }
 
-void MobileAppHandler::vCreateSimStateMachineAppFrame(agribot_msgs::AgribotMobileAppFrame* ptrFrame)
+void MobileAppHandler::vCreateSimStateMachineAppFrame(
+    agribot_msgs::AgribotMobileAppFrame* ptrFrame)
 {
     if (bFreshData)
     {
@@ -329,7 +354,7 @@ void MobileAppHandler::vCreateSimStateMachineAppFrame(agribot_msgs::AgribotMobil
 std::string MobileAppHandler::strGetTaskName()
 {
     std::string strTemp = strChosenTask;
-    strChosenTask="";
+    strChosenTask = "";
     return strTemp;
 }
 

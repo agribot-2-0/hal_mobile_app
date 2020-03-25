@@ -1,6 +1,4 @@
 #include <hal_mobile_app/MobileAppHandler.h>
-#include <ros/ros.h>
-#include <ros/console.h>
 #include <iostream>
 
 #define ADDR_MASK 0x7FF
@@ -50,9 +48,9 @@
 
 MobileAppHandler::MobileAppHandler(char* pchCanChannel)
 {
-    _CanHandler.iInitialize(pchCanChannel);
-    _fRadius = 0;
-    _fManualLinearVelo = 0;
+    CanHandler.iInitialize(pchCanChannel);
+    dRadius = 0;
+    dManualLinearVelo = 0;
 
     iCommandId = 0;
     bFreshData = false;
@@ -81,17 +79,17 @@ MobileAppHandler::MobileAppHandler(char* pchCanChannel)
 void MobileAppHandler::vReceiveCanFrames()
 {
     can_frame message;
-    while (_CanHandler.bReceiveFrame(&message))
+    while (CanHandler.bReceiveFrame(&message))
     {
-        _FramesQueue.push(message);
+        FramesQueue.push(message);
     }
 }
 
 MobileAppHandler::~MobileAppHandler()
 {
-    while (!_FramesQueue.empty())
+    while (!FramesQueue.empty())
     {
-        _FramesQueue.pop();
+        FramesQueue.pop();
     }
 }
 
@@ -107,19 +105,19 @@ uint8_t MobileAppHandler::u8ParseCanFrames()
 {
     uint8_t u8Status = 0;
     can_frame message;
-    while (!_FramesQueue.empty())
+    while (!FramesQueue.empty())
     {
-        message = _FramesQueue.front();
+        message = FramesQueue.front();
         if ((PROTOCOL_ARC_FRAME&ADDR_MASK) == (message.can_id&ADDR_MASK))
         {
             int8_t i8VeloSign =
                 message.data[LIN_VELO_SIGN_BYTE] == 0 ? BACKWARD:FORWARD;
             int8_t i8DirectionSign = message.data[DIRECTION_SIGN_BYTE]
                 == 0 ? RIGHT_ARCH:LEFT_ARCH;
-            _fManualLinearVelo =
+            dManualLinearVelo =
                 (static_cast<float>(i16GetTwoBytes(LIN_VELO_BYTE, message))*
                 i8VeloSign) / LIN_VELO_PARSE_CONST;
-            _fRadius = (static_cast<float>
+            dRadius = (static_cast<float>
                 (i16GetTwoBytes(RADIUS_BYTE, message)) * i8DirectionSign)
                 / RADIUS_PARSE_CONST;
             u8Status |= RECEIVED_MANUAL_STEERING;
@@ -147,15 +145,15 @@ uint8_t MobileAppHandler::u8ParseCanFrames()
         else if ((PROTOCOL_ERROR_FRAMES&ADDR_MASK) ==
                  (message.can_id&ADDR_MASK))
         {
-            _ProtocolErrorTypeQueue.push(message.data[ERROR_TYPE_BYTE]);
-            _ProtocolErrorSpecificQueue.push(message.data[ERROR_SPECIFIC_BYTE]);
+            ProtocolErrorTypeQueue.push(message.data[ERROR_TYPE_BYTE]);
+            ProtocolErrorSpecificQueue.push(message.data[ERROR_SPECIFIC_BYTE]);
             u8Status |= RECEIVED_PROTOCOL_ERROR;
         }
         else if ((PROTOCOL_MAN_ERROR_FRAMES&ADDR_MASK) ==
                  (message.can_id&ADDR_MASK))
         {
-            _ManualErrorTypeQueue.push(message.data[ERROR_TYPE_BYTE]);
-            _ManualErrorSpecificQueue.push(message.data[ERROR_SPECIFIC_BYTE]);
+            ManualErrorTypeQueue.push(message.data[ERROR_TYPE_BYTE]);
+            ManualErrorSpecificQueue.push(message.data[ERROR_SPECIFIC_BYTE]);
             u8Status |= RECEIVED_MANUALSTEERING_ERROR;
         }
         else if ((PROTOCOL_CONFIGURATION_FRAME&ADDR_MASK)
@@ -199,7 +197,7 @@ uint8_t MobileAppHandler::u8ParseCanFrames()
             }
             u8Status |= RECEIVED_CONFIGURATION;
         }
-        _FramesQueue.pop();
+        FramesQueue.pop();
     }
     return u8Status;
 }
@@ -210,56 +208,51 @@ void MobileAppHandler::vAssemblyStateMachineFrame(
     switch (uFrameType)
     {
         case RECEIVED_MANUAL_STEERING:
-            ptrFrameMsg->header.stamp = ros::Time::now();
             ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
             ptrFrameMsg->can_id = PROTOCOL_ARC_FRAME;
-            if (_fManualLinearVelo >= 0)
+            if (dManualLinearVelo >= 0)
                 ptrFrameMsg->can_byte_array[LIN_VELO_SIGN_BYTE] = 1;
             else
                 ptrFrameMsg->can_byte_array[LIN_VELO_SIGN_BYTE] = 0;
             ptrFrameMsg->can_byte_array[LIN_VELO_BYTE] =
-            ((abs(static_cast<int>(_fManualLinearVelo*100)))&0xFF00)>>8;
+            ((abs(static_cast<int>(dManualLinearVelo*100)))&0xFF00)>>8;
             ptrFrameMsg->can_byte_array[LIN_VELO_BYTE+1] =
-            (abs(static_cast<int>(_fManualLinearVelo*100)))&0x00FF;
-            if (_fRadius >= 0)
+            (abs(static_cast<int>(dManualLinearVelo*100)))&0x00FF;
+            if (dRadius >= 0)
                 ptrFrameMsg->can_byte_array[DIRECTION_SIGN_BYTE] = 1;
             else
                 ptrFrameMsg->can_byte_array[DIRECTION_SIGN_BYTE] = 0;
             ptrFrameMsg->can_byte_array[RADIUS_BYTE] =
-            ((abs(static_cast<int>(_fRadius*10)))&0xFF00)>>8;
+            ((abs(static_cast<int>(dRadius*10)))&0xFF00)>>8;
             ptrFrameMsg->can_byte_array[RADIUS_BYTE+1] =
-            (abs(static_cast<int>(_fRadius*10)))&0x00FF;
+            (abs(static_cast<int>(dRadius*10)))&0x00FF;
             break;
         case RECEIVED_HANDSHAKE:
-            ptrFrameMsg->header.stamp = ros::Time::now();
             ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
             ptrFrameMsg->can_id = PROTOCOL_HANDSHAKE_FRAME;
             ptrFrameMsg->can_byte_array[0] = 10;   // dummy load
             break;
         case RECEIVED_MANUAL_MODE_COMF:
-            ptrFrameMsg->header.stamp = ros::Time::now();
             ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
             ptrFrameMsg->can_id = PROTOCOL_MANUALSTEERING;
             ptrFrameMsg->can_byte_array[0] = 10;
             break;
         case RECEIVED_AUTO_STEERING:
-            ptrFrameMsg->header.stamp = ros::Time::now();
             ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
             ptrFrameMsg->can_id = PROTOCOL_AUTOMATIC_STEERING;
             ptrFrameMsg->can_byte_array[0] = 10;
             break;
         case RECEIVED_PROTOCOL_ERROR:
-            if (!_ProtocolErrorTypeQueue.empty())
+            if (!ProtocolErrorTypeQueue.empty())
             {
-                ptrFrameMsg->header.stamp = ros::Time::now();
                 ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
                 ptrFrameMsg->can_id = PROTOCOL_ERROR_FRAMES;
                 ptrFrameMsg->can_byte_array[ERROR_TYPE_BYTE] =
-                _ProtocolErrorTypeQueue.front();
-                _ProtocolErrorTypeQueue.pop();
+                ProtocolErrorTypeQueue.front();
+                ProtocolErrorTypeQueue.pop();
                 ptrFrameMsg->can_byte_array[ERROR_SPECIFIC_BYTE] =
-                _ProtocolErrorSpecificQueue.front();
-                _ProtocolErrorSpecificQueue.pop();
+                ProtocolErrorSpecificQueue.front();
+                ProtocolErrorSpecificQueue.pop();
             }
             else
             {
@@ -267,17 +260,16 @@ void MobileAppHandler::vAssemblyStateMachineFrame(
             }
             break;
         case RECEIVED_MANUALSTEERING_ERROR:
-            if (!_ManualErrorTypeQueue.empty())
+            if (!ManualErrorTypeQueue.empty())
             {
-                ptrFrameMsg->header.stamp = ros::Time::now();
                 ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
                 ptrFrameMsg->can_id = PROTOCOL_ERROR_FRAMES;
                 ptrFrameMsg->can_byte_array[ERROR_TYPE_BYTE] =
-                _ManualErrorTypeQueue.front();
-                _ManualErrorTypeQueue.pop();
+                ManualErrorTypeQueue.front();
+                ManualErrorTypeQueue.pop();
                 ptrFrameMsg->can_byte_array[ERROR_SPECIFIC_BYTE] =
-                _ManualErrorSpecificQueue.front();
-                _ManualErrorSpecificQueue.pop();
+                ManualErrorSpecificQueue.front();
+                ManualErrorSpecificQueue.pop();
             }
             else
             {
@@ -297,12 +289,12 @@ void MobileAppHandler::vAssemblyStateMachineFrame(
 
 float MobileAppHandler::fGetManualRadius()
 {
-    return _fRadius;
+    return dRadius;
 }
 
 float MobileAppHandler::fGetManualLinearVelo()
 {
-    return _fManualLinearVelo;
+    return dManualLinearVelo;
 }
 
 void MobileAppHandler::vSetSimulationAppFrame(
@@ -319,7 +311,6 @@ void MobileAppHandler::vSetSimulationAppFrame(
     msg_byte_array[5] = _chRecBytes[5];
     msg_byte_array[6] = _chRecBytes[6];
     msg_byte_array[7] = _chRecBytes[7];
-    ROS_INFO("Received app event ID = [%d]", uRecFrameID);
     bFreshData = true;
 }
 
@@ -340,7 +331,6 @@ void MobileAppHandler::vSetSimulationMoveFrame(
             fBackLinear = fBkLin;
             fBackAngular = fBkAng;
             bFreshData = true;
-            ROS_INFO("Received only move commands ID = [%d]", iCommandId);
         }
     }
 }
@@ -355,8 +345,7 @@ void MobileAppHandler::vCreateSimStateMachineAppFrame(
 {
     if (bFreshData)
     {
-        ptrFrame->header.stamp = ros::Time::now();
-        ptrFrame->header.frame_id = "mobile_app_commands_link";
+        ptrFrame->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
         ptrFrame->can_id = iCommandId;
         ptrFrame->can_byte_array[0] = msg_byte_array[0];
         ptrFrame->can_byte_array[1] = msg_byte_array[1];

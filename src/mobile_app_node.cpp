@@ -88,7 +88,7 @@ int main(int argc, char **argv)
               CommHandlerControl.vCreateSimStateMachineAppFrame(&FrameMsg);
 
               ROS_INFO("%s", FrameMsg.header.frame_id.c_str());
-
+              FrameMsg.header.stamp = ros::Time::now();
               StateMachinePub.publish(FrameMsg);
           }
       }
@@ -107,6 +107,7 @@ int main(int argc, char **argv)
 
               CommHandlerControl.vAssemblyStateMachineFrame(
                                         &FrameMsg, RECEIVED_MANUAL_STEERING);
+              FrameMsg.header.stamp = ros::Time::now();
               StateMachinePub.publish(FrameMsg);
           }
           if ((u8Status&RECEIVED_MANUAL_MODE_COMF) ==
@@ -114,6 +115,7 @@ int main(int argc, char **argv)
           {
               CommHandlerControl.vAssemblyStateMachineFrame(
                                       &FrameMsg, RECEIVED_MANUAL_MODE_COMF);
+              FrameMsg.header.stamp = ros::Time::now();
               StateMachinePub.publish(FrameMsg);
           }
           if ((u8Status&RECEIVED_AUTO_STEERING) ==
@@ -121,6 +123,7 @@ int main(int argc, char **argv)
           {
               CommHandlerControl.vAssemblyStateMachineFrame(
                                         &FrameMsg, RECEIVED_AUTO_STEERING);
+              FrameMsg.header.stamp = ros::Time::now();
               StateMachinePub.publish(FrameMsg);
           }
           if ((u8Status&RECEIVED_PROTOCOL_ERROR) ==
@@ -133,7 +136,10 @@ int main(int argc, char **argv)
                 if (FrameMsg.can_id == 0)
                   break;
                 else
+                {
+                  FrameMsg.header.stamp = ros::Time::now();
                   StateMachinePub.publish(FrameMsg);
+                }
               }
           }
           if ((u8Status&RECEIVED_MANUALSTEERING_ERROR) ==
@@ -146,13 +152,17 @@ int main(int argc, char **argv)
                 if (FrameMsg.can_id == 0)
                   break;
                 else
+                {
+                  FrameMsg.header.stamp = ros::Time::now();
                   StateMachinePub.publish(FrameMsg);
+                }
               }
           }
           if ((u8Status&RECEIVED_CONFIGURATION) == RECEIVED_CONFIGURATION)
           {
             CommHandlerControl.vAssemblyStateMachineFrame(
                                       &FrameMsg, RECEIVED_CONFIGURATION);
+            FrameMsg.header.stamp = ros::Time::now();
             StateMachinePub.publish(FrameMsg);
           }
       }

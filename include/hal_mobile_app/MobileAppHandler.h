@@ -2,6 +2,7 @@
 
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_common/Can.h>
+#include <agribot_common/AgribotComponent.h>
 #include <queue>
 #include <cmath>
 #include <string>
@@ -16,16 +17,16 @@
 #define RECEIVED_MANUALSTEERING_ERROR 0x40
 #define RECEIVED_CONFIGURATION 0x80
 
-class MobileAppHandler
+class MobileAppHandler: public AgribotComponent
 {
-    Can _CanHandler;
-    std::queue<can_frame> _FramesQueue;
-    double _fManualLinearVelo = 0;
-    double _fRadius = 0;
-    std::queue<uint8_t> _ProtocolErrorTypeQueue;
-    std::queue<uint8_t> _ProtocolErrorSpecificQueue;
-    std::queue<uint8_t> _ManualErrorTypeQueue;
-    std::queue<uint8_t> _ManualErrorSpecificQueue;
+    Can CanHandler;
+    std::queue<can_frame> FramesQueue;
+    double dManualLinearVelo = 0;
+    double dRadius = 0;
+    std::queue<uint8_t> ProtocolErrorTypeQueue;
+    std::queue<uint8_t> ProtocolErrorSpecificQueue;
+    std::queue<uint8_t> ManualErrorTypeQueue;
+    std::queue<uint8_t> ManualErrorSpecificQueue;
     int16_t i16GetTwoBytes(uint8_t u8StartBit, can_frame CanFrame);
 
     // onfiguration data

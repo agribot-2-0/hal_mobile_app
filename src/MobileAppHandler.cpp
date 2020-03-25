@@ -20,9 +20,17 @@
 
 #define CONFIG_TYPE_BYTE 0
 #define CONFIG_FRONT_TOOL_AL 1
+#define CONFIG_FRONT_TOOL_AL_MASK_PART 0x01
 #define CONFIG_FRONT_TOOL_VM 2
+#define CONFIG_FRONT_TOOL_VM_MASK_PART 0x02
 #define CONFIG_BACK_TOOL_AL 3
+#define CONFIG_BACK_TOOL_AL_MASK_PART 0x04
 #define CONFIG_BACK_TOOL_VM 4
+#define CONFIG_BACK_TOOL_VM_MASK_PART 0x08
+#define CONFIG_COMPLETE_MASK (CONFIG_FRONT_TOOL_AL_MASK_PART |\
+                              CONFIG_FRONT_TOOL_VM_MASK_PART |\
+                              CONFIG_BACK_TOOL_AL_MASK_PART |\
+                              CONFIG_BACK_TOOL_VM_MASK_PART)
 
 #define CONFIG_TOOL_ANGLE_BYTE 1
 #define CONFIG_TOOL_LENGTH_BYTE 3
@@ -41,7 +49,6 @@
 #define BACKWARD -1
 #define FORWARD 1
 
-#define HEADER_STRING_MOB_APP_FRAME "mobile_app_commands_link"
 #define ERROR_TYPE_BYTE 0
 #define ERROR_SPECIFIC_BYTE 1
 
@@ -61,7 +68,7 @@ MobileAppHandler::MobileAppHandler(char* pchCanChannel)
         msg_byte_array[i] = 20;
         i++;
     }
-    bReceivedCompleteConfig = false;
+    u8ReceivedConfigParts = 0x00;
     uFrontToolAngle = 0;
     uFrontToolLength = 0;
     u8FrontToolValveRedFlow = 0;
@@ -165,6 +172,7 @@ uint8_t MobileAppHandler::u8ParseCanFrames()
                 (i16GetTwoBytes(CONFIG_TOOL_ANGLE_BYTE, message));
                 uFrontToolLength = static_cast<uint>
                 (i16GetTwoBytes(CONFIG_TOOL_LENGTH_BYTE, message));
+                u8ReceivedConfigParts |= CONFIG_FRONT_TOOL_AL_MASK_PART;
             }
             else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_FRONT_TOOL_VM)
             {
@@ -176,6 +184,7 @@ uint8_t MobileAppHandler::u8ParseCanFrames()
                 message.data[CONFIG_TOOL_VALVE_B_BYTE];
                 u8FrontToolMotorSpeed =
                 message.data[CONFIG_TOOL_MOTOR_BYTE];
+                u8ReceivedConfigParts |= CONFIG_FRONT_TOOL_VM_MASK_PART;
             }
             else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_BACK_TOOL_AL)
             {
@@ -183,6 +192,7 @@ uint8_t MobileAppHandler::u8ParseCanFrames()
                 (i16GetTwoBytes(CONFIG_TOOL_ANGLE_BYTE, message));
                 uBackToolLength = static_cast<uint>
                 (i16GetTwoBytes(CONFIG_TOOL_LENGTH_BYTE, message));
+                u8ReceivedConfigParts |= CONFIG_BACK_TOOL_AL_MASK_PART;
             }
             else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_BACK_TOOL_VM)
             {
@@ -194,6 +204,7 @@ uint8_t MobileAppHandler::u8ParseCanFrames()
                 message.data[CONFIG_TOOL_VALVE_B_BYTE];
                 u8BackToolMotorSpeed =
                 message.data[CONFIG_TOOL_MOTOR_BYTE];
+                u8ReceivedConfigParts |= CONFIG_BACK_TOOL_VM_MASK_PART;
             }
             u8Status |= RECEIVED_CONFIGURATION;
         }
@@ -203,86 +214,145 @@ uint8_t MobileAppHandler::u8ParseCanFrames()
 }
 
 void MobileAppHandler::vAssemblyStateMachineFrame(
-    agribot_msgs::AgribotMobileAppFrame* ptrFrameMsg, uint uFrameType)
+    uint* uCanID, uint8_t *u8MsgBytes, uint uFrameType)
 {
     switch (uFrameType)
     {
         case RECEIVED_MANUAL_STEERING:
-            ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
-            ptrFrameMsg->can_id = PROTOCOL_ARC_FRAME;
+            *uCanID = PROTOCOL_ARC_FRAME;
             if (dManualLinearVelo >= 0)
-                ptrFrameMsg->can_byte_array[LIN_VELO_SIGN_BYTE] = 1;
+                u8MsgBytes[LIN_VELO_SIGN_BYTE] = 1;
             else
-                ptrFrameMsg->can_byte_array[LIN_VELO_SIGN_BYTE] = 0;
-            ptrFrameMsg->can_byte_array[LIN_VELO_BYTE] =
+                u8MsgBytes[LIN_VELO_SIGN_BYTE] = 0;
+            u8MsgBytes[LIN_VELO_BYTE] =
             ((abs(static_cast<int>(dManualLinearVelo*100)))&0xFF00)>>8;
-            ptrFrameMsg->can_byte_array[LIN_VELO_BYTE+1] =
+            u8MsgBytes[LIN_VELO_BYTE+1] =
             (abs(static_cast<int>(dManualLinearVelo*100)))&0x00FF;
             if (dRadius >= 0)
-                ptrFrameMsg->can_byte_array[DIRECTION_SIGN_BYTE] = 1;
+                u8MsgBytes[DIRECTION_SIGN_BYTE] = 1;
             else
-                ptrFrameMsg->can_byte_array[DIRECTION_SIGN_BYTE] = 0;
-            ptrFrameMsg->can_byte_array[RADIUS_BYTE] =
+                u8MsgBytes[DIRECTION_SIGN_BYTE] = 0;
+            u8MsgBytes[RADIUS_BYTE] =
             ((abs(static_cast<int>(dRadius*10)))&0xFF00)>>8;
-            ptrFrameMsg->can_byte_array[RADIUS_BYTE+1] =
+            u8MsgBytes[RADIUS_BYTE+1] =
             (abs(static_cast<int>(dRadius*10)))&0x00FF;
             break;
         case RECEIVED_HANDSHAKE:
-            ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
-            ptrFrameMsg->can_id = PROTOCOL_HANDSHAKE_FRAME;
-            ptrFrameMsg->can_byte_array[0] = 10;   // dummy load
+            *uCanID = PROTOCOL_HANDSHAKE_FRAME;
+            u8MsgBytes[0] = 10;   // dummy load
             break;
         case RECEIVED_MANUAL_MODE_COMF:
-            ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
-            ptrFrameMsg->can_id = PROTOCOL_MANUALSTEERING;
-            ptrFrameMsg->can_byte_array[0] = 10;
+            *uCanID = PROTOCOL_MANUALSTEERING;
+            u8MsgBytes[0] = 10;
             break;
         case RECEIVED_AUTO_STEERING:
-            ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
-            ptrFrameMsg->can_id = PROTOCOL_AUTOMATIC_STEERING;
-            ptrFrameMsg->can_byte_array[0] = 10;
+            *uCanID = PROTOCOL_AUTOMATIC_STEERING;
+            u8MsgBytes[0] = 10;
             break;
         case RECEIVED_PROTOCOL_ERROR:
             if (!ProtocolErrorTypeQueue.empty())
             {
-                ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
-                ptrFrameMsg->can_id = PROTOCOL_ERROR_FRAMES;
-                ptrFrameMsg->can_byte_array[ERROR_TYPE_BYTE] =
+                *uCanID = PROTOCOL_ERROR_FRAMES;
+                u8MsgBytes[ERROR_TYPE_BYTE] =
                 ProtocolErrorTypeQueue.front();
                 ProtocolErrorTypeQueue.pop();
-                ptrFrameMsg->can_byte_array[ERROR_SPECIFIC_BYTE] =
+                u8MsgBytes[ERROR_SPECIFIC_BYTE] =
                 ProtocolErrorSpecificQueue.front();
                 ProtocolErrorSpecificQueue.pop();
             }
             else
             {
-                ptrFrameMsg->can_id = 0;
+                *uCanID = 0;
             }
             break;
         case RECEIVED_MANUALSTEERING_ERROR:
             if (!ManualErrorTypeQueue.empty())
             {
-                ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
-                ptrFrameMsg->can_id = PROTOCOL_ERROR_FRAMES;
-                ptrFrameMsg->can_byte_array[ERROR_TYPE_BYTE] =
+                *uCanID = PROTOCOL_ERROR_FRAMES;
+                u8MsgBytes[ERROR_TYPE_BYTE] =
                 ManualErrorTypeQueue.front();
                 ManualErrorTypeQueue.pop();
-                ptrFrameMsg->can_byte_array[ERROR_SPECIFIC_BYTE] =
+                u8MsgBytes[ERROR_SPECIFIC_BYTE] =
                 ManualErrorSpecificQueue.front();
                 ManualErrorSpecificQueue.pop();
             }
             else
             {
-                ptrFrameMsg->can_id = 0;
+                *uCanID = 0;
             }
             break;
         case RECEIVED_CONFIGURATION:
-             ptrFrameMsg->can_id = PROTOCOL_CONFIGURATION_FRAME;
-             if (bReceivedCompleteConfig)
-                ptrFrameMsg->can_byte_array[CONFIG_TYPE_BYTE] = 100;
-             break;
+            if (u8ReceivedConfigParts & CONFIG_FRONT_TOOL_AL_MASK_PART
+                 == CONFIG_FRONT_TOOL_AL_MASK_PART)
+            {
+                *uCanID = PROTOCOL_CONFIGURATION_FRAME;
+                u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_FRONT_TOOL_AL;
+                u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE] =
+                                                (uFrontToolAngle & 0xFF00)>>8;
+                u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE+1] =
+                                                uFrontToolAngle & 0x00FF;
+                u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE] =
+                                                (uFrontToolLength & 0xFF00)>>8;
+                u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE+1] =
+                                                uFrontToolLength & 0x00FF;
+
+                u8ReceivedConfigParts &= ~CONFIG_FRONT_TOOL_AL_MASK_PART;
+            }
+            else if (u8ReceivedConfigParts & CONFIG_FRONT_TOOL_VM_MASK_PART
+                 == CONFIG_FRONT_TOOL_VM_MASK_PART)
+            {
+                *uCanID = PROTOCOL_CONFIGURATION_FRAME;
+                u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_FRONT_TOOL_VM;
+                u8MsgBytes[CONFIG_TOOL_VALVE_R_BYTE] =
+                                                u8FrontToolValveRedFlow;
+                u8MsgBytes[CONFIG_TOOL_VALVE_G_BYTE] =
+                                                u8FrontToolValveGreenFlow;
+                u8MsgBytes[CONFIG_TOOL_VALVE_B_BYTE] =
+                                                u8FrontToolValveBlueFlow;
+                u8MsgBytes[CONFIG_TOOL_MOTOR_BYTE] =
+                                                u8FrontToolMotorSpeed;
+
+                u8ReceivedConfigParts &= ~CONFIG_FRONT_TOOL_VM_MASK_PART;
+            }
+            else if (u8ReceivedConfigParts & CONFIG_BACK_TOOL_AL_MASK_PART
+                 == CONFIG_BACK_TOOL_AL_MASK_PART)
+            {
+                *uCanID = PROTOCOL_CONFIGURATION_FRAME;
+                u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_BACK_TOOL_AL;
+                u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE] =
+                                                (uBackToolAngle & 0xFF00)>>8;
+                u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE+1] =
+                                                uBackToolAngle & 0x00FF;
+                u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE] =
+                                                (uBackToolLength & 0xFF00)>>8;
+                u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE+1] =
+                                                uBackToolLength & 0x00FF;
+
+                u8ReceivedConfigParts &= ~CONFIG_BACK_TOOL_AL_MASK_PART;
+            }
+            else if (u8ReceivedConfigParts & CONFIG_BACK_TOOL_VM_MASK_PART
+                 == CONFIG_BACK_TOOL_VM_MASK_PART)
+            {
+                *uCanID = PROTOCOL_CONFIGURATION_FRAME;
+                u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_BACK_TOOL_VM;
+                u8MsgBytes[CONFIG_TOOL_VALVE_R_BYTE] =
+                                                u8BackToolValveRedFlow;
+                u8MsgBytes[CONFIG_TOOL_VALVE_G_BYTE] =
+                                                u8BackToolValveGreenFlow;
+                u8MsgBytes[CONFIG_TOOL_VALVE_B_BYTE] =
+                                                u8BackToolValveBlueFlow;
+                u8MsgBytes[CONFIG_TOOL_MOTOR_BYTE] =
+                                                u8BackToolMotorSpeed;
+
+                u8ReceivedConfigParts &= ~CONFIG_BACK_TOOL_VM_MASK_PART;
+            }
+            else
+            {
+                *uCanID = 0;
+            }
+            break;
         default:
-            ptrFrameMsg->can_id = 0;
+            *uCanID = 0;
             break;
     }
 }
@@ -341,21 +411,13 @@ void MobileAppHandler::vSetChosenTask(std::string strTaskName)
 }
 
 void MobileAppHandler::vCreateSimStateMachineAppFrame(
-    agribot_msgs::AgribotMobileAppFrame* ptrFrame)
+    uint* uCanID, uint8_t *u8MsgBytes)
 {
     if (bFreshData)
     {
-        ptrFrame->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
-        ptrFrame->can_id = iCommandId;
-        ptrFrame->can_byte_array[0] = msg_byte_array[0];
-        ptrFrame->can_byte_array[1] = msg_byte_array[1];
-        ptrFrame->can_byte_array[2] = msg_byte_array[2];
-        ptrFrame->can_byte_array[3] = msg_byte_array[3];
-        ptrFrame->can_byte_array[4] = msg_byte_array[4];
-        ptrFrame->can_byte_array[5] = msg_byte_array[5];
-        ptrFrame->can_byte_array[6] = msg_byte_array[6];
-        ptrFrame->can_byte_array[7] = msg_byte_array[7];
-
+        *uCanID = iCommandId;
+        for (int i = 0; i < 8; i++)
+            u8MsgBytes[i] = msg_byte_array[i];
         bFreshData = false;
     }
 }

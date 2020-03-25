@@ -8,6 +8,7 @@
 #include <sstream>
 
 #define USED_CAN "can1"
+#define HEADER_STRING_MOB_APP_FRAME "mobile_app_commands_link"
 
 MobileAppHandler CommHandlerControl(USED_CAN);
 
@@ -22,6 +23,17 @@ void vAppTaskChoosedEventCallback(
   const std_msgs::String::ConstPtr& ptrMsg)
 {
   CommHandlerControl.vSetChosenTask(ptrMsg->data);
+}
+
+void vFillTheMessageObject(
+  agribot_msgs::AgribotMobileAppFrame* ptrFrameMsg,
+   uint uCanID, uint8_t* u8MsgBytes)
+{
+  ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
+  ptrFrameMsg->header.stamp = ros::Time::now();
+  ptrFrameMsg->can_id = uCanID;
+  for (int i = 0; i < 8; i++)
+    ptrFrameMsg->can_byte_array[i] = u8MsgBytes[i];
 }
 
 int main(int argc, char **argv)
@@ -68,6 +80,8 @@ int main(int argc, char **argv)
     agribot_msgs::AgribotMobileAppFrame FrameMsg;
     agribot_msgs::AgribotManualControl ManualSteeringMsg;
 
+    uint8_t u8MsgBytes[8];
+    uint uCanID = 0;
     uint8_t u8Status = 0x00;
 
     while (ros::ok())
@@ -85,10 +99,9 @@ int main(int argc, char **argv)
 
           if (CommHandlerControl.bDataPendingSimulation())
           {
-              CommHandlerControl.vCreateSimStateMachineAppFrame(&FrameMsg);
-
-              ROS_INFO("%s", FrameMsg.header.frame_id.c_str());
-              FrameMsg.header.stamp = ros::Time::now();
+              CommHandlerControl.vCreateSimStateMachineAppFrame
+                                                    (&uCanID, u8MsgBytes);
+              vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
               StateMachinePub.publish(FrameMsg);
           }
       }
@@ -106,24 +119,24 @@ int main(int argc, char **argv)
               PublishManualSteering.publish(ManualSteeringMsg);
 
               CommHandlerControl.vAssemblyStateMachineFrame(
-                                        &FrameMsg, RECEIVED_MANUAL_STEERING);
-              FrameMsg.header.stamp = ros::Time::now();
+                                &uCanID, u8MsgBytes, RECEIVED_MANUAL_STEERING);
+              vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
               StateMachinePub.publish(FrameMsg);
           }
           if ((u8Status&RECEIVED_MANUAL_MODE_COMF) ==
               RECEIVED_MANUAL_MODE_COMF)
           {
               CommHandlerControl.vAssemblyStateMachineFrame(
-                                      &FrameMsg, RECEIVED_MANUAL_MODE_COMF);
-              FrameMsg.header.stamp = ros::Time::now();
+                              &uCanID, u8MsgBytes, RECEIVED_MANUAL_MODE_COMF);
+              vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
               StateMachinePub.publish(FrameMsg);
           }
           if ((u8Status&RECEIVED_AUTO_STEERING) ==
               RECEIVED_AUTO_STEERING)
           {
               CommHandlerControl.vAssemblyStateMachineFrame(
-                                        &FrameMsg, RECEIVED_AUTO_STEERING);
-              FrameMsg.header.stamp = ros::Time::now();
+                                  &uCanID, u8MsgBytes, RECEIVED_AUTO_STEERING);
+              vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
               StateMachinePub.publish(FrameMsg);
           }
           if ((u8Status&RECEIVED_PROTOCOL_ERROR) ==
@@ -132,12 +145,12 @@ int main(int argc, char **argv)
               while (true)
               {
                 CommHandlerControl.vAssemblyStateMachineFrame(
-                                      &FrameMsg, RECEIVED_PROTOCOL_ERROR);
-                if (FrameMsg.can_id == 0)
+                                &uCanID, u8MsgBytes, RECEIVED_PROTOCOL_ERROR);
+                if (uCanID == 0)
                   break;
                 else
                 {
-                  FrameMsg.header.stamp = ros::Time::now();
+                  vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
                   StateMachinePub.publish(FrameMsg);
                 }
               }
@@ -148,22 +161,30 @@ int main(int argc, char **argv)
               while (true)
               {
                 CommHandlerControl.vAssemblyStateMachineFrame(
-                                &FrameMsg, RECEIVED_MANUALSTEERING_ERROR);
-                if (FrameMsg.can_id == 0)
+                          &uCanID, u8MsgBytes, RECEIVED_MANUALSTEERING_ERROR);
+                if (uCanID == 0)
                   break;
                 else
                 {
-                  FrameMsg.header.stamp = ros::Time::now();
+                  vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
                   StateMachinePub.publish(FrameMsg);
                 }
               }
           }
           if ((u8Status&RECEIVED_CONFIGURATION) == RECEIVED_CONFIGURATION)
           {
-            CommHandlerControl.vAssemblyStateMachineFrame(
-                                      &FrameMsg, RECEIVED_CONFIGURATION);
-            FrameMsg.header.stamp = ros::Time::now();
-            StateMachinePub.publish(FrameMsg);
+            while (true)
+              {
+                CommHandlerControl.vAssemblyStateMachineFrame(
+                                  &uCanID, u8MsgBytes, RECEIVED_CONFIGURATION);
+                if (uCanID == 0)
+                  break;
+                else
+                {
+                  vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
+                  StateMachinePub.publish(FrameMsg);
+                }
+              }
           }
       }
       ros::spinOnce();

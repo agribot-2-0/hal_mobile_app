@@ -30,7 +30,7 @@ class MobileAppHandler: public AgribotComponent
     int16_t i16GetTwoBytes(uint8_t u8StartBit, can_frame CanFrame);
 
     // onfiguration data
-    bool bReceivedCompleteConfig;
+    uint8_t u8ReceivedConfigParts;
     uint uFrontToolAngle;
     uint uFrontToolLength;
     uint8_t u8FrontToolValveRedFlow;
@@ -64,8 +64,7 @@ class MobileAppHandler: public AgribotComponent
     float fGetManualRadius();
     float fGetManualLinearVelo();
     void vAssemblyStateMachineFrame(
-        agribot_msgs::AgribotMobileAppFrame* pFrameMsg,
-        uint uFrameType);
+        uint* uCanID, uint8_t *u8MsgBytes, uint uFrameType);
 
     virtual int configure();
     virtual bool startup();
@@ -80,7 +79,7 @@ class MobileAppHandler: public AgribotComponent
 
     // simulation part
     void vCreateSimStateMachineAppFrame(
-        agribot_msgs::AgribotMobileAppFrame* pFrame);
+        uint* uCanID, uint8_t *u8MsgBytes);
 
     void vSetSimulationAppFrame(const uint32_t uRecFrameID,
         const boost::array<unsigned char, 8> _chRecBytes);

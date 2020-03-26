@@ -1,1 +1,461 @@
 #include <hal_mobile_app/MobileAppHandler.h>
+#include <iostream>
+
+#define ADDR_MASK 0x7FF
+#define PROTOCOL_ARC_FRAME 0x035
+#define PROTOCOL_HB_FRAME 0x001
+#define PROTOCOL_HANDSHAKE_FRAME 0x00A
+#define PROTOCOL_MANUALSTEERING 0x015
+#define PROTOCOL_AUTOMATIC_STEERING 0x01F
+#define PROTOCOL_ERROR_FRAMES 0x0C8
+#define PROTOCOL_MAN_ERROR_FRAMES 0x0C9
+#define PROTOCOL_CONFIGURATION_FRAME 0x96
+
+#define LIN_VELO_SIGN_BYTE 0
+#define DIRECTION_SIGN_BYTE 1
+#define RADIUS_BYTE 2
+#define LIN_VELO_BYTE 4
+#define RADIUS_PARSE_CONST 10
+#define LIN_VELO_PARSE_CONST 100
+
+#define CONFIG_TYPE_BYTE 0
+#define CONFIG_FRONT_TOOL_AL 1
+#define CONFIG_FRONT_TOOL_AL_MASK_PART 0x01
+#define CONFIG_FRONT_TOOL_VM 2
+#define CONFIG_FRONT_TOOL_VM_MASK_PART 0x02
+#define CONFIG_BACK_TOOL_AL 3
+#define CONFIG_BACK_TOOL_AL_MASK_PART 0x04
+#define CONFIG_BACK_TOOL_VM 4
+#define CONFIG_BACK_TOOL_VM_MASK_PART 0x08
+#define CONFIG_COMPLETE_MASK (CONFIG_FRONT_TOOL_AL_MASK_PART |\
+                              CONFIG_FRONT_TOOL_VM_MASK_PART |\
+                              CONFIG_BACK_TOOL_AL_MASK_PART |\
+                              CONFIG_BACK_TOOL_VM_MASK_PART)
+
+#define CONFIG_TOOL_ANGLE_BYTE 1
+#define CONFIG_TOOL_LENGTH_BYTE 3
+
+#define CONFIG_TOOL_VALVE_R_BYTE 1
+#define CONFIG_TOOL_VALVE_G_BYTE 2
+#define CONFIG_TOOL_VALVE_B_BYTE 3
+#define CONFIG_TOOL_MOTOR_BYTE 4
+
+#define MAX_RADIUS 10
+#define MIN_RADIUS 1.5
+
+#define LEFT_ARCH 1
+#define RIGHT_ARCH -1
+
+#define BACKWARD -1
+#define FORWARD 1
+
+#define ERROR_TYPE_BYTE 0
+#define ERROR_SPECIFIC_BYTE 1
+
+
+MobileAppHandler::MobileAppHandler(char* pchCanChannel)
+{
+    CanHandler.iInitialize(pchCanChannel);
+    dRadius = 0;
+    dManualLinearVelo = 0;
+
+    iCommandId = 0;
+    bFreshData = false;
+    strChosenTask = "";
+    int i = 0;
+    while (i < 8)
+    {
+        msg_byte_array[i] = 20;
+        i++;
+    }
+    u8ReceivedConfigParts = 0x00;
+    uFrontToolAngle = 0;
+    uFrontToolLength = 0;
+    u8FrontToolValveRedFlow = 0;
+    u8FrontToolValveGreenFlow = 0;
+    u8FrontToolValveBlueFlow = 0;
+    u8FrontToolMotorSpeed = 0;
+    uBackToolAngle = 0;
+    uBackToolLength = 0;
+    u8BackToolValveRedFlow = 0;
+    u8BackToolValveGreenFlow = 0;
+    u8BackToolValveBlueFlow = 0;
+    u8BackToolMotorSpeed = 0;
+}
+
+void MobileAppHandler::vReceiveCanFrames()
+{
+    can_frame message;
+    while (CanHandler.bReceiveFrame(&message))
+    {
+        FramesQueue.push(message);
+    }
+}
+
+MobileAppHandler::~MobileAppHandler()
+{
+    while (!FramesQueue.empty())
+    {
+        FramesQueue.pop();
+    }
+}
+
+int16_t MobileAppHandler::i16GetTwoBytes(
+    uint8_t u8StartBit,
+     can_frame CanFrame)
+{
+    return ((int16_t)CanFrame.data[u8StartBit]) <<8 |
+           ((int16_t)CanFrame.data[u8StartBit+1]);
+}
+
+uint8_t MobileAppHandler::u8ParseCanFrames()
+{
+    uint8_t u8Status = 0;
+    can_frame message;
+    while (!FramesQueue.empty())
+    {
+        message = FramesQueue.front();
+        if ((PROTOCOL_ARC_FRAME&ADDR_MASK) == (message.can_id&ADDR_MASK))
+        {
+            int8_t i8VeloSign =
+                message.data[LIN_VELO_SIGN_BYTE] == 0 ? BACKWARD:FORWARD;
+            int8_t i8DirectionSign = message.data[DIRECTION_SIGN_BYTE]
+                == 0 ? RIGHT_ARCH:LEFT_ARCH;
+            dManualLinearVelo =
+                (static_cast<float>(i16GetTwoBytes(LIN_VELO_BYTE, message))*
+                i8VeloSign) / LIN_VELO_PARSE_CONST;
+            dRadius = (static_cast<float>
+                (i16GetTwoBytes(RADIUS_BYTE, message)) * i8DirectionSign)
+                / RADIUS_PARSE_CONST;
+            u8Status |= RECEIVED_MANUAL_STEERING;
+        }
+        else if ((PROTOCOL_HANDSHAKE_FRAME&ADDR_MASK) ==
+                 (message.can_id&ADDR_MASK))
+        {
+            u8Status |= RECEIVED_HANDSHAKE;
+        }
+        else if ((PROTOCOL_HB_FRAME&ADDR_MASK) ==
+                 (message.can_id&ADDR_MASK))
+        {
+            u8Status |= RECEIVED_HEARTBEAT;
+        }
+        else if ((PROTOCOL_MANUALSTEERING&ADDR_MASK) ==
+                 (message.can_id&ADDR_MASK))
+        {
+            u8Status |= RECEIVED_MANUAL_MODE_COMF;
+        }
+        else if ((PROTOCOL_AUTOMATIC_STEERING&ADDR_MASK) ==
+                 (message.can_id&ADDR_MASK))
+        {
+            u8Status |= RECEIVED_AUTO_STEERING;
+        }
+        else if ((PROTOCOL_ERROR_FRAMES&ADDR_MASK) ==
+                 (message.can_id&ADDR_MASK))
+        {
+            ProtocolErrorTypeQueue.push(message.data[ERROR_TYPE_BYTE]);
+            ProtocolErrorSpecificQueue.push(message.data[ERROR_SPECIFIC_BYTE]);
+            u8Status |= RECEIVED_PROTOCOL_ERROR;
+        }
+        else if ((PROTOCOL_MAN_ERROR_FRAMES&ADDR_MASK) ==
+                 (message.can_id&ADDR_MASK))
+        {
+            ManualErrorTypeQueue.push(message.data[ERROR_TYPE_BYTE]);
+            ManualErrorSpecificQueue.push(message.data[ERROR_SPECIFIC_BYTE]);
+            u8Status |= RECEIVED_MANUALSTEERING_ERROR;
+        }
+        else if ((PROTOCOL_CONFIGURATION_FRAME&ADDR_MASK)
+                 == (message.can_id&ADDR_MASK))
+        {
+            if (message.data[CONFIG_TYPE_BYTE] == CONFIG_FRONT_TOOL_AL)
+            {
+                uFrontToolAngle = static_cast<uint>
+                (i16GetTwoBytes(CONFIG_TOOL_ANGLE_BYTE, message));
+                uFrontToolLength = static_cast<uint>
+                (i16GetTwoBytes(CONFIG_TOOL_LENGTH_BYTE, message));
+                u8ReceivedConfigParts |= CONFIG_FRONT_TOOL_AL_MASK_PART;
+            }
+            else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_FRONT_TOOL_VM)
+            {
+                u8FrontToolValveRedFlow =
+                message.data[CONFIG_TOOL_VALVE_R_BYTE];
+                u8FrontToolValveGreenFlow =
+                message.data[CONFIG_TOOL_VALVE_G_BYTE];
+                u8FrontToolValveBlueFlow =
+                message.data[CONFIG_TOOL_VALVE_B_BYTE];
+                u8FrontToolMotorSpeed =
+                message.data[CONFIG_TOOL_MOTOR_BYTE];
+                u8ReceivedConfigParts |= CONFIG_FRONT_TOOL_VM_MASK_PART;
+            }
+            else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_BACK_TOOL_AL)
+            {
+                uBackToolAngle = static_cast<uint>
+                (i16GetTwoBytes(CONFIG_TOOL_ANGLE_BYTE, message));
+                uBackToolLength = static_cast<uint>
+                (i16GetTwoBytes(CONFIG_TOOL_LENGTH_BYTE, message));
+                u8ReceivedConfigParts |= CONFIG_BACK_TOOL_AL_MASK_PART;
+            }
+            else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_BACK_TOOL_VM)
+            {
+                u8BackToolValveRedFlow =
+                message.data[CONFIG_TOOL_VALVE_R_BYTE];
+                u8BackToolValveGreenFlow =
+                message.data[CONFIG_TOOL_VALVE_G_BYTE];
+                u8BackToolValveBlueFlow =
+                message.data[CONFIG_TOOL_VALVE_B_BYTE];
+                u8BackToolMotorSpeed =
+                message.data[CONFIG_TOOL_MOTOR_BYTE];
+                u8ReceivedConfigParts |= CONFIG_BACK_TOOL_VM_MASK_PART;
+            }
+            u8Status |= RECEIVED_CONFIGURATION;
+        }
+        FramesQueue.pop();
+    }
+    return u8Status;
+}
+
+void MobileAppHandler::vAssemblyStateMachineFrame(
+    uint* uCanID, uint8_t *u8MsgBytes, uint uFrameType)
+{
+    switch (uFrameType)
+    {
+        case RECEIVED_MANUAL_STEERING:
+            *uCanID = PROTOCOL_ARC_FRAME;
+            if (dManualLinearVelo >= 0)
+                u8MsgBytes[LIN_VELO_SIGN_BYTE] = 1;
+            else
+                u8MsgBytes[LIN_VELO_SIGN_BYTE] = 0;
+            u8MsgBytes[LIN_VELO_BYTE] =
+            ((abs(static_cast<int>(dManualLinearVelo*100)))&0xFF00)>>8;
+            u8MsgBytes[LIN_VELO_BYTE+1] =
+            (abs(static_cast<int>(dManualLinearVelo*100)))&0x00FF;
+            if (dRadius >= 0)
+                u8MsgBytes[DIRECTION_SIGN_BYTE] = 1;
+            else
+                u8MsgBytes[DIRECTION_SIGN_BYTE] = 0;
+            u8MsgBytes[RADIUS_BYTE] =
+            ((abs(static_cast<int>(dRadius*10)))&0xFF00)>>8;
+            u8MsgBytes[RADIUS_BYTE+1] =
+            (abs(static_cast<int>(dRadius*10)))&0x00FF;
+            break;
+        case RECEIVED_HANDSHAKE:
+            *uCanID = PROTOCOL_HANDSHAKE_FRAME;
+            u8MsgBytes[0] = 10;   // dummy load
+            break;
+        case RECEIVED_MANUAL_MODE_COMF:
+            *uCanID = PROTOCOL_MANUALSTEERING;
+            u8MsgBytes[0] = 10;
+            break;
+        case RECEIVED_AUTO_STEERING:
+            *uCanID = PROTOCOL_AUTOMATIC_STEERING;
+            u8MsgBytes[0] = 10;
+            break;
+        case RECEIVED_PROTOCOL_ERROR:
+            if (!ProtocolErrorTypeQueue.empty())
+            {
+                *uCanID = PROTOCOL_ERROR_FRAMES;
+                u8MsgBytes[ERROR_TYPE_BYTE] =
+                ProtocolErrorTypeQueue.front();
+                ProtocolErrorTypeQueue.pop();
+                u8MsgBytes[ERROR_SPECIFIC_BYTE] =
+                ProtocolErrorSpecificQueue.front();
+                ProtocolErrorSpecificQueue.pop();
+            }
+            else
+            {
+                *uCanID = 0;
+            }
+            break;
+        case RECEIVED_MANUALSTEERING_ERROR:
+            if (!ManualErrorTypeQueue.empty())
+            {
+                *uCanID = PROTOCOL_ERROR_FRAMES;
+                u8MsgBytes[ERROR_TYPE_BYTE] =
+                ManualErrorTypeQueue.front();
+                ManualErrorTypeQueue.pop();
+                u8MsgBytes[ERROR_SPECIFIC_BYTE] =
+                ManualErrorSpecificQueue.front();
+                ManualErrorSpecificQueue.pop();
+            }
+            else
+            {
+                *uCanID = 0;
+            }
+            break;
+        case RECEIVED_CONFIGURATION:
+            if (u8ReceivedConfigParts & CONFIG_FRONT_TOOL_AL_MASK_PART
+                 == CONFIG_FRONT_TOOL_AL_MASK_PART)
+            {
+                *uCanID = PROTOCOL_CONFIGURATION_FRAME;
+                u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_FRONT_TOOL_AL;
+                u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE] =
+                                                (uFrontToolAngle & 0xFF00)>>8;
+                u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE+1] =
+                                                uFrontToolAngle & 0x00FF;
+                u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE] =
+                                                (uFrontToolLength & 0xFF00)>>8;
+                u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE+1] =
+                                                uFrontToolLength & 0x00FF;
+
+                u8ReceivedConfigParts &= ~CONFIG_FRONT_TOOL_AL_MASK_PART;
+            }
+            else if (u8ReceivedConfigParts & CONFIG_FRONT_TOOL_VM_MASK_PART
+                 == CONFIG_FRONT_TOOL_VM_MASK_PART)
+            {
+                *uCanID = PROTOCOL_CONFIGURATION_FRAME;
+                u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_FRONT_TOOL_VM;
+                u8MsgBytes[CONFIG_TOOL_VALVE_R_BYTE] =
+                                                u8FrontToolValveRedFlow;
+                u8MsgBytes[CONFIG_TOOL_VALVE_G_BYTE] =
+                                                u8FrontToolValveGreenFlow;
+                u8MsgBytes[CONFIG_TOOL_VALVE_B_BYTE] =
+                                                u8FrontToolValveBlueFlow;
+                u8MsgBytes[CONFIG_TOOL_MOTOR_BYTE] =
+                                                u8FrontToolMotorSpeed;
+
+                u8ReceivedConfigParts &= ~CONFIG_FRONT_TOOL_VM_MASK_PART;
+            }
+            else if (u8ReceivedConfigParts & CONFIG_BACK_TOOL_AL_MASK_PART
+                 == CONFIG_BACK_TOOL_AL_MASK_PART)
+            {
+                *uCanID = PROTOCOL_CONFIGURATION_FRAME;
+                u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_BACK_TOOL_AL;
+                u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE] =
+                                                (uBackToolAngle & 0xFF00)>>8;
+                u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE+1] =
+                                                uBackToolAngle & 0x00FF;
+                u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE] =
+                                                (uBackToolLength & 0xFF00)>>8;
+                u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE+1] =
+                                                uBackToolLength & 0x00FF;
+
+                u8ReceivedConfigParts &= ~CONFIG_BACK_TOOL_AL_MASK_PART;
+            }
+            else if (u8ReceivedConfigParts & CONFIG_BACK_TOOL_VM_MASK_PART
+                 == CONFIG_BACK_TOOL_VM_MASK_PART)
+            {
+                *uCanID = PROTOCOL_CONFIGURATION_FRAME;
+                u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_BACK_TOOL_VM;
+                u8MsgBytes[CONFIG_TOOL_VALVE_R_BYTE] =
+                                                u8BackToolValveRedFlow;
+                u8MsgBytes[CONFIG_TOOL_VALVE_G_BYTE] =
+                                                u8BackToolValveGreenFlow;
+                u8MsgBytes[CONFIG_TOOL_VALVE_B_BYTE] =
+                                                u8BackToolValveBlueFlow;
+                u8MsgBytes[CONFIG_TOOL_MOTOR_BYTE] =
+                                                u8BackToolMotorSpeed;
+
+                u8ReceivedConfigParts &= ~CONFIG_BACK_TOOL_VM_MASK_PART;
+            }
+            else
+            {
+                *uCanID = 0;
+            }
+            break;
+        default:
+            *uCanID = 0;
+            break;
+    }
+}
+
+float MobileAppHandler::fGetManualRadius()
+{
+    return dRadius;
+}
+
+float MobileAppHandler::fGetManualLinearVelo()
+{
+    return dManualLinearVelo;
+}
+
+void MobileAppHandler::vSetSimulationAppFrame(
+    const uint32_t uRecFrameID,
+    const boost::array<unsigned char,
+     8> _chRecBytes)
+{
+    iCommandId = uRecFrameID;
+    msg_byte_array[0] = _chRecBytes[0];
+    msg_byte_array[1] = _chRecBytes[1];
+    msg_byte_array[2] = _chRecBytes[2];
+    msg_byte_array[3] = _chRecBytes[3];
+    msg_byte_array[4] = _chRecBytes[4];
+    msg_byte_array[5] = _chRecBytes[5];
+    msg_byte_array[6] = _chRecBytes[6];
+    msg_byte_array[7] = _chRecBytes[7];
+    bFreshData = true;
+}
+
+// Method used to register and inform state machine about incoming msg
+void MobileAppHandler::vSetSimulationMoveFrame(
+    float fFrLin,
+    float fFrAng,
+    float fBkLin,
+    float fBkAng)
+{
+    if (!bFreshData)
+    {
+        if (fFrLin != 0 && fFrAng != 0 && fBkLin != 0 && fBkAng != 0)
+        {
+            iCommandId = 53;
+            fFrontLinear = fFrLin;
+            fFrontAngular = fFrAng;
+            fBackLinear = fBkLin;
+            fBackAngular = fBkAng;
+            bFreshData = true;
+        }
+    }
+}
+
+void MobileAppHandler::vSetChosenTask(std::string strTaskName)
+{
+    strChosenTask = strTaskName;
+}
+
+void MobileAppHandler::vCreateSimStateMachineAppFrame(
+    uint* uCanID, uint8_t *u8MsgBytes)
+{
+    if (bFreshData)
+    {
+        *uCanID = iCommandId;
+        for (int i = 0; i < 8; i++)
+            u8MsgBytes[i] = msg_byte_array[i];
+        bFreshData = false;
+    }
+}
+
+
+std::string MobileAppHandler::strGetTaskName()
+{
+    std::string strTemp = strChosenTask;
+    strChosenTask = "";
+    return strTemp;
+}
+
+int MobileAppHandler::configure()
+{
+    return 0;
+}
+
+bool MobileAppHandler::startup()
+{
+    return true;
+}
+
+bool MobileAppHandler::update()
+{
+    return true;
+}
+
+bool MobileAppHandler::stop()
+{
+    return true;
+}
+
+bool MobileAppHandler::cleanup()
+{
+    return true;
+}
+
+bool MobileAppHandler::bDataPendingSimulation()
+{
+    return bFreshData;
+}

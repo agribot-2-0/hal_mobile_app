@@ -27,11 +27,16 @@
 #define CONFIG_BACK_TOOL_AL_MASK_PART 0x04
 #define CONFIG_BACK_TOOL_VM 4
 #define CONFIG_BACK_TOOL_VM_MASK_PART 0x08
+#define CONFIG_TOOLS_RFIDS 5
+#define CONFIG_TOOLS_RFIDS_MASK_PART 0x10
 #define CONFIG_COMPLETE_MASK (CONFIG_FRONT_TOOL_AL_MASK_PART |\
                               CONFIG_FRONT_TOOL_VM_MASK_PART |\
                               CONFIG_BACK_TOOL_AL_MASK_PART |\
-                              CONFIG_BACK_TOOL_VM_MASK_PART)
+                              CONFIG_BACK_TOOL_VM_MASK_PART |\
+                              CONFIG_TOOLS_RFIDS_MASK_PART)
 
+#define CONFIG_TOOL_RFID_FRONT_START_BYTE 1
+#define CONFIG_TOOL_RFID_BACK_START_BYTE 4
 #define CONFIG_TOOL_ANGLE_BYTE 1
 #define CONFIG_TOOL_LENGTH_BYTE 3
 
@@ -206,6 +211,22 @@ uint8_t MobileAppHandler::u8ParseCanFrames()
                 message.data[CONFIG_TOOL_MOTOR_BYTE];
                 u8ReceivedConfigParts |= CONFIG_BACK_TOOL_VM_MASK_PART;
             }
+            else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_TOOLS_RFIDS)
+            {
+                uFrontRFID = static_cast<uint>
+                (message.data[CONFIG_TOOL_RFID_FRONT_START_BYTE] << 16);
+                uFrontRFID = uFrontRFID + static_cast<uint>
+                (message.data[CONFIG_TOOL_RFID_FRONT_START_BYTE+1] << 8);
+                uFrontRFID = uFrontRFID + static_cast<uint>
+                (message.data[CONFIG_TOOL_RFID_FRONT_START_BYTE+2]);
+                uBackRFID = static_cast<uint>
+                (message.data[CONFIG_TOOL_RFID_BACK_START_BYTE] << 16);
+                uBackRFID = uBackRFID + static_cast<uint>
+                (message.data[CONFIG_TOOL_RFID_BACK_START_BYTE+1] << 8);
+                uBackRFID = uBackRFID + static_cast<uint>
+                (message.data[CONFIG_TOOL_RFID_BACK_START_BYTE+2]);
+                u8ReceivedConfigParts |= CONFIG_TOOLS_RFIDS_MASK_PART;
+            }
             u8Status |= RECEIVED_CONFIGURATION;
         }
         FramesQueue.pop();
@@ -288,13 +309,13 @@ void MobileAppHandler::vAssemblyStateMachineFrame(
                 *uCanID = PROTOCOL_CONFIGURATION_FRAME;
                 u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_FRONT_TOOL_AL;
                 u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE] =
-                                                (uFrontToolAngle & 0xFF00)>>8;
+                                            (uFrontToolAngle & 0xFF00) >> 8;
                 u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE+1] =
-                                                uFrontToolAngle & 0x00FF;
+                                            uFrontToolAngle & 0x00FF;
                 u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE] =
-                                                (uFrontToolLength & 0xFF00)>>8;
+                                            (uFrontToolLength & 0xFF00) >> 8;
                 u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE+1] =
-                                                uFrontToolLength & 0x00FF;
+                                            uFrontToolLength & 0x00FF;
 
                 u8ReceivedConfigParts &= ~CONFIG_FRONT_TOOL_AL_MASK_PART;
             }
@@ -320,13 +341,13 @@ void MobileAppHandler::vAssemblyStateMachineFrame(
                 *uCanID = PROTOCOL_CONFIGURATION_FRAME;
                 u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_BACK_TOOL_AL;
                 u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE] =
-                                                (uBackToolAngle & 0xFF00)>>8;
+                                            (uBackToolAngle & 0xFF00) >> 8;
                 u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE+1] =
-                                                uBackToolAngle & 0x00FF;
+                                            uBackToolAngle & 0x00FF;
                 u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE] =
-                                                (uBackToolLength & 0xFF00)>>8;
+                                            (uBackToolLength & 0xFF00) >> 8;
                 u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE+1] =
-                                                uBackToolLength & 0x00FF;
+                                            uBackToolLength & 0x00FF;
 
                 u8ReceivedConfigParts &= ~CONFIG_BACK_TOOL_AL_MASK_PART;
             }
@@ -345,6 +366,25 @@ void MobileAppHandler::vAssemblyStateMachineFrame(
                                                 u8BackToolMotorSpeed;
 
                 u8ReceivedConfigParts &= ~CONFIG_BACK_TOOL_VM_MASK_PART;
+            }
+            else if (u8ReceivedConfigParts & CONFIG_TOOLS_RFIDS_MASK_PART
+                 == CONFIG_TOOLS_RFIDS_MASK_PART)
+            {
+                *uCanID = PROTOCOL_CONFIGURATION_FRAME;
+                u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_TOOLS_RFIDS;
+                u8MsgBytes[CONFIG_TOOL_RFID_FRONT_START_BYTE] =
+                            static_cast<uint8_t>((uFrontRFID&0xFF0000) >> 16);
+                u8MsgBytes[CONFIG_TOOL_RFID_FRONT_START_BYTE+1] =
+                            static_cast<uint8_t>((uFrontRFID&0x00FF00) >> 8);
+                u8MsgBytes[CONFIG_TOOL_RFID_FRONT_START_BYTE+2] =
+                            static_cast<uint8_t>((uFrontRFID&0x0000FF));
+                u8MsgBytes[CONFIG_TOOL_RFID_BACK_START_BYTE] =
+                            static_cast<uint8_t>((uBackRFID&0xFF0000) >> 16);
+                u8MsgBytes[CONFIG_TOOL_RFID_BACK_START_BYTE+1] =
+                            static_cast<uint8_t>((uBackRFID&0x00FF00) >> 8);
+                u8MsgBytes[CONFIG_TOOL_RFID_BACK_START_BYTE+2] =
+                            static_cast<uint8_t>((uBackRFID&0x0000FF));
+                u8ReceivedConfigParts &= ~CONFIG_TOOLS_RFIDS_MASK_PART;
             }
             else
             {

@@ -31,12 +31,14 @@ class MobileAppHandler: public AgribotComponent
 
     // onfiguration data
     uint8_t u8ReceivedConfigParts;
+    uint uFrontRFID;
     uint uFrontToolAngle;
     uint uFrontToolLength;
     uint8_t u8FrontToolValveRedFlow;
     uint8_t u8FrontToolValveGreenFlow;
     uint8_t u8FrontToolValveBlueFlow;
     uint8_t u8FrontToolMotorSpeed;
+    uint uBackRFID;
     uint uBackToolAngle;
     uint uBackToolLength;
     uint8_t u8BackToolValveRedFlow;

@@ -157,7 +157,7 @@ int main(int argc, char **argv)
           }
           if ((u8Status&RECEIVED_PROTOCOL_ERROR) ==
               RECEIVED_PROTOCOL_ERROR)
-          {              
+          {
               ErrorIndicator.data = 1;
               StateMachineErrorPub.publish(ErrorIndicator);
               while (true)
@@ -192,7 +192,7 @@ int main(int argc, char **argv)
               }
           }
           if (ErrorIndicator.data == 0)
-          {   
+          {
               // Send no error to the state machine
               StateMachineErrorPub.publish(ErrorIndicator);
           }

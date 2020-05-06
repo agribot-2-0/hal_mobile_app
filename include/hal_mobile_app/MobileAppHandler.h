@@ -8,14 +8,16 @@
 #include <string>
 #include <boost/array.hpp>
 
-#define RECEIVED_HANDSHAKE 0x01
-#define RECEIVED_HEARTBEAT 0x02
-#define RECEIVED_MANUAL_MODE_COMF 0x04
-#define RECEIVED_MANUAL_STEERING 0x08
-#define RECEIVED_AUTO_STEERING 0x10
-#define RECEIVED_PROTOCOL_ERROR 0x20
-#define RECEIVED_MANUALSTEERING_ERROR 0x40
-#define RECEIVED_CONFIGURATION 0x80
+#define RECEIVED_HANDSHAKE 0x0001
+#define RECEIVED_HEARTBEAT 0x0002
+#define RECEIVED_MANUAL_MODE_COMF 0x0004
+#define RECEIVED_MANUAL_STEERING 0x0008
+#define RECEIVED_AUTO_STEERING 0x0010
+#define RECEIVED_PROTOCOL_ERROR 0x0020
+#define RECEIVED_MANUALSTEERING_ERROR 0x0040
+#define RECEIVED_CONFIGURATION 0x0080
+#define RECEIVED_ENG_ERROR_START 0x0100
+#define RECEIVED_ENG_ERROR 0x0200
 
 class MobileAppHandler: public AgribotComponent
 {
@@ -29,7 +31,16 @@ class MobileAppHandler: public AgribotComponent
     std::queue<uint8_t> ManualErrorSpecificQueue;
     int16_t i16GetTwoBytes(uint8_t u8StartBit, can_frame CanFrame);
 
-    // onfiguration data
+    // engine errors
+    uint8_t CodesTotal;
+    uint8_t LampState;
+    std::queue<uint8_t> CodeNumberQueue;
+    std::queue<uint> SPNQueue;
+    std::queue<uint8_t> FMIQueue;
+    std::queue<uint8_t> OCCQueue;
+    std::queue<uint8_t> EngErrStateQueue;
+
+    // configuration data
     uint8_t u8ReceivedConfigParts;
     uint uFrontRFID;
     uint uFrontToolAngle;
@@ -62,7 +73,7 @@ class MobileAppHandler: public AgribotComponent
     explicit MobileAppHandler(char* pchCanChannel);
     ~MobileAppHandler();
     void vReceiveCanFrames();
-    uint8_t u8ParseCanFrames();
+    uint16_t u16ParseCanFrames();
     float fGetManualRadius();
     float fGetManualLinearVelo();
     void vAssemblyStateMachineFrame(

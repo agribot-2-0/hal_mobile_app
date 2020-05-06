@@ -94,7 +94,7 @@ int main(int argc, char **argv)
     std_msgs::Int32 ErrorIndicator;
     uint8_t u8MsgBytes[8];
     uint uCanID = 0;
-    uint8_t u8Status = 0x00;
+    uint16_t u16Status = 0x00;
 
     while (ros::ok())
     {
@@ -121,8 +121,8 @@ int main(int argc, char **argv)
       {
           ErrorIndicator.data = 0;
           CommHandlerControl.vReceiveCanFrames();
-          u8Status = CommHandlerControl.u8ParseCanFrames();
-          if ((u8Status&RECEIVED_MANUAL_STEERING) ==
+          u16Status = CommHandlerControl.u16ParseCanFrames();
+          if ((u16Status&RECEIVED_MANUAL_STEERING) ==
               RECEIVED_MANUAL_STEERING)
           {
               ManualSteeringMsg.linear_velocity =
@@ -136,7 +136,7 @@ int main(int argc, char **argv)
               vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
               StateMachinePub.publish(FrameMsg);
           }
-          if ((u8Status&RECEIVED_MANUAL_MODE_COMF) ==
+          if ((u16Status&RECEIVED_MANUAL_MODE_COMF) ==
               RECEIVED_MANUAL_MODE_COMF)
           {
               RobMode.val = RobMode.MANUAL;
@@ -146,18 +146,19 @@ int main(int argc, char **argv)
               vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
               StateMachinePub.publish(FrameMsg);
           }
-          if ((u8Status&RECEIVED_AUTO_STEERING) ==
+          if ((u16Status&RECEIVED_AUTO_STEERING) ==
               RECEIVED_AUTO_STEERING)
           {
               RobMode.val = RobMode.AUTO;
+              StateMachineModePub.publish(RobMode);
               CommHandlerControl.vAssemblyStateMachineFrame(
                                   &uCanID, u8MsgBytes, RECEIVED_AUTO_STEERING);
               vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
               StateMachinePub.publish(FrameMsg);
           }
-          if ((u8Status&RECEIVED_PROTOCOL_ERROR) ==
+          if ((u16Status&RECEIVED_PROTOCOL_ERROR) ==
               RECEIVED_PROTOCOL_ERROR)
-          {              
+          {
               ErrorIndicator.data = 1;
               StateMachineErrorPub.publish(ErrorIndicator);
               while (true)
@@ -173,7 +174,7 @@ int main(int argc, char **argv)
                 }
               }
           }
-          if ((u8Status&RECEIVED_MANUALSTEERING_ERROR) ==
+          if ((u16Status&RECEIVED_MANUALSTEERING_ERROR) ==
                RECEIVED_MANUALSTEERING_ERROR)
           {
               ErrorIndicator.data = 2;
@@ -192,11 +193,11 @@ int main(int argc, char **argv)
               }
           }
           if (ErrorIndicator.data == 0)
-          {   
+          {
               // Send no error to the state machine
               StateMachineErrorPub.publish(ErrorIndicator);
           }
-          if ((u8Status&RECEIVED_CONFIGURATION) == RECEIVED_CONFIGURATION)
+          if ((u16Status&RECEIVED_CONFIGURATION) == RECEIVED_CONFIGURATION)
           {
             while (true)
               {
@@ -210,6 +211,30 @@ int main(int argc, char **argv)
                   StateMachinePub.publish(FrameMsg);
                 }
               }
+          }
+          if ((u16Status&RECEIVED_ENG_ERROR_START) ==
+              RECEIVED_ENG_ERROR_START)
+          {
+              CommHandlerControl.vAssemblyStateMachineFrame(
+                                &uCanID, u8MsgBytes, RECEIVED_ENG_ERROR_START);
+              vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
+              StateMachinePub.publish(FrameMsg);
+          }
+          if ((u16Status&RECEIVED_ENG_ERROR) ==
+              RECEIVED_ENG_ERROR)
+          {
+            while (true)
+            {
+              CommHandlerControl.vAssemblyStateMachineFrame(
+                                  &uCanID, u8MsgBytes, RECEIVED_ENG_ERROR);
+              if (uCanID == 0)
+                break;
+              else
+              {
+                vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
+                StateMachinePub.publish(FrameMsg);
+              }
+            }
           }
       }
       ros::spinOnce();

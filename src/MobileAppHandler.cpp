@@ -10,6 +10,8 @@
 #define PROTOCOL_ERROR_FRAMES 0x0C8
 #define PROTOCOL_MAN_ERROR_FRAMES 0x0C9
 #define PROTOCOL_CONFIGURATION_FRAME 0x96
+#define PROTOCOL_ENG_ERROR_START_FRAME 0x104
+#define PROTOCOL_ENG_ERROR_FRAME 0x105
 
 #define LIN_VELO_SIGN_BYTE 0
 #define DIRECTION_SIGN_BYTE 1
@@ -27,11 +29,16 @@
 #define CONFIG_BACK_TOOL_AL_MASK_PART 0x04
 #define CONFIG_BACK_TOOL_VM 4
 #define CONFIG_BACK_TOOL_VM_MASK_PART 0x08
+#define CONFIG_TOOLS_RFIDS 5
+#define CONFIG_TOOLS_RFIDS_MASK_PART 0x10
 #define CONFIG_COMPLETE_MASK (CONFIG_FRONT_TOOL_AL_MASK_PART |\
                               CONFIG_FRONT_TOOL_VM_MASK_PART |\
                               CONFIG_BACK_TOOL_AL_MASK_PART |\
-                              CONFIG_BACK_TOOL_VM_MASK_PART)
+                              CONFIG_BACK_TOOL_VM_MASK_PART |\
+                              CONFIG_TOOLS_RFIDS_MASK_PART)
 
+#define CONFIG_TOOL_RFID_FRONT_START_BYTE 1
+#define CONFIG_TOOL_RFID_BACK_START_BYTE 4
 #define CONFIG_TOOL_ANGLE_BYTE 1
 #define CONFIG_TOOL_LENGTH_BYTE 3
 
@@ -52,6 +59,13 @@
 #define ERROR_TYPE_BYTE 0
 #define ERROR_SPECIFIC_BYTE 1
 
+#define ENG_ERR_NUM_TOTAL_BYTE 0
+#define LAMP_STATE_BYTE 1
+#define ENG_ERROR_NUM_BYTE 0
+#define SPN_FIRST_BYTE 1
+#define FMI_BYTE 4
+#define OCC_BYTE 5
+#define ENG_ERR_STATE_BYTE 6
 
 MobileAppHandler::MobileAppHandler(char* pchCanChannel)
 {
@@ -81,6 +95,8 @@ MobileAppHandler::MobileAppHandler(char* pchCanChannel)
     u8BackToolValveGreenFlow = 0;
     u8BackToolValveBlueFlow = 0;
     u8BackToolMotorSpeed = 0;
+    CodesTotal = 0;
+    LampState = 0;
 }
 
 void MobileAppHandler::vReceiveCanFrames()
@@ -108,9 +124,9 @@ int16_t MobileAppHandler::i16GetTwoBytes(
            ((int16_t)CanFrame.data[u8StartBit+1]);
 }
 
-uint8_t MobileAppHandler::u8ParseCanFrames()
+uint16_t MobileAppHandler::u16ParseCanFrames()
 {
-    uint8_t u8Status = 0;
+    uint8_t u16Status = 0;
     can_frame message;
     while (!FramesQueue.empty())
     {
@@ -127,41 +143,61 @@ uint8_t MobileAppHandler::u8ParseCanFrames()
             dRadius = (static_cast<float>
                 (i16GetTwoBytes(RADIUS_BYTE, message)) * i8DirectionSign)
                 / RADIUS_PARSE_CONST;
-            u8Status |= RECEIVED_MANUAL_STEERING;
+            u16Status |= RECEIVED_MANUAL_STEERING;
         }
         else if ((PROTOCOL_HANDSHAKE_FRAME&ADDR_MASK) ==
                  (message.can_id&ADDR_MASK))
         {
-            u8Status |= RECEIVED_HANDSHAKE;
+            u16Status |= RECEIVED_HANDSHAKE;
         }
         else if ((PROTOCOL_HB_FRAME&ADDR_MASK) ==
                  (message.can_id&ADDR_MASK))
         {
-            u8Status |= RECEIVED_HEARTBEAT;
+            u16Status |= RECEIVED_HEARTBEAT;
         }
         else if ((PROTOCOL_MANUALSTEERING&ADDR_MASK) ==
                  (message.can_id&ADDR_MASK))
         {
-            u8Status |= RECEIVED_MANUAL_MODE_COMF;
+            u16Status |= RECEIVED_MANUAL_MODE_COMF;
         }
         else if ((PROTOCOL_AUTOMATIC_STEERING&ADDR_MASK) ==
                  (message.can_id&ADDR_MASK))
         {
-            u8Status |= RECEIVED_AUTO_STEERING;
+            u16Status |= RECEIVED_AUTO_STEERING;
         }
         else if ((PROTOCOL_ERROR_FRAMES&ADDR_MASK) ==
                  (message.can_id&ADDR_MASK))
         {
             ProtocolErrorTypeQueue.push(message.data[ERROR_TYPE_BYTE]);
             ProtocolErrorSpecificQueue.push(message.data[ERROR_SPECIFIC_BYTE]);
-            u8Status |= RECEIVED_PROTOCOL_ERROR;
+            u16Status |= RECEIVED_PROTOCOL_ERROR;
         }
         else if ((PROTOCOL_MAN_ERROR_FRAMES&ADDR_MASK) ==
                  (message.can_id&ADDR_MASK))
         {
             ManualErrorTypeQueue.push(message.data[ERROR_TYPE_BYTE]);
             ManualErrorSpecificQueue.push(message.data[ERROR_SPECIFIC_BYTE]);
-            u8Status |= RECEIVED_MANUALSTEERING_ERROR;
+            u16Status |= RECEIVED_MANUALSTEERING_ERROR;
+        }
+        else  if ((PROTOCOL_ENG_ERROR_START_FRAME&ADDR_MASK) ==
+                 (message.can_id&ADDR_MASK))
+        {
+            CodesTotal = message.data[ENG_ERR_NUM_TOTAL_BYTE];
+            LampState = message.data[LAMP_STATE_BYTE];
+            u16Status |= RECEIVED_ENG_ERROR_START;
+        }
+        else  if ((PROTOCOL_ENG_ERROR_FRAME&ADDR_MASK) ==
+                 (message.can_id&ADDR_MASK))
+        {
+            CodeNumberQueue.push(message.data[ENG_ERROR_NUM_BYTE]);
+            uint SPN = message.data[SPN_FIRST_BYTE] +
+                  message.data[SPN_FIRST_BYTE+1] << 8 +
+                  message.data[SPN_FIRST_BYTE+2] << 16;
+            SPNQueue.push(SPN);
+            FMIQueue.push(message.data[FMI_BYTE]);
+            OCCQueue.push(message.data[OCC_BYTE]);
+            EngErrStateQueue.push(message.data[ENG_ERR_STATE_BYTE]);
+            u16Status |= RECEIVED_ENG_ERROR;
         }
         else if ((PROTOCOL_CONFIGURATION_FRAME&ADDR_MASK)
                  == (message.can_id&ADDR_MASK))
@@ -206,11 +242,27 @@ uint8_t MobileAppHandler::u8ParseCanFrames()
                 message.data[CONFIG_TOOL_MOTOR_BYTE];
                 u8ReceivedConfigParts |= CONFIG_BACK_TOOL_VM_MASK_PART;
             }
-            u8Status |= RECEIVED_CONFIGURATION;
+            else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_TOOLS_RFIDS)
+            {
+                uFrontRFID = static_cast<uint>
+                (message.data[CONFIG_TOOL_RFID_FRONT_START_BYTE] << 16);
+                uFrontRFID = uFrontRFID + static_cast<uint>
+                (message.data[CONFIG_TOOL_RFID_FRONT_START_BYTE+1] << 8);
+                uFrontRFID = uFrontRFID + static_cast<uint>
+                (message.data[CONFIG_TOOL_RFID_FRONT_START_BYTE+2]);
+                uBackRFID = static_cast<uint>
+                (message.data[CONFIG_TOOL_RFID_BACK_START_BYTE] << 16);
+                uBackRFID = uBackRFID + static_cast<uint>
+                (message.data[CONFIG_TOOL_RFID_BACK_START_BYTE+1] << 8);
+                uBackRFID = uBackRFID + static_cast<uint>
+                (message.data[CONFIG_TOOL_RFID_BACK_START_BYTE+2]);
+                u8ReceivedConfigParts |= CONFIG_TOOLS_RFIDS_MASK_PART;
+            }
+            u16Status |= RECEIVED_CONFIGURATION;
         }
         FramesQueue.pop();
     }
-    return u8Status;
+    return u16Status;
 }
 
 void MobileAppHandler::vAssemblyStateMachineFrame(
@@ -288,13 +340,13 @@ void MobileAppHandler::vAssemblyStateMachineFrame(
                 *uCanID = PROTOCOL_CONFIGURATION_FRAME;
                 u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_FRONT_TOOL_AL;
                 u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE] =
-                                                (uFrontToolAngle & 0xFF00)>>8;
+                                            (uFrontToolAngle & 0xFF00) >> 8;
                 u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE+1] =
-                                                uFrontToolAngle & 0x00FF;
+                                            uFrontToolAngle & 0x00FF;
                 u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE] =
-                                                (uFrontToolLength & 0xFF00)>>8;
+                                            (uFrontToolLength & 0xFF00) >> 8;
                 u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE+1] =
-                                                uFrontToolLength & 0x00FF;
+                                            uFrontToolLength & 0x00FF;
 
                 u8ReceivedConfigParts &= ~CONFIG_FRONT_TOOL_AL_MASK_PART;
             }
@@ -320,13 +372,13 @@ void MobileAppHandler::vAssemblyStateMachineFrame(
                 *uCanID = PROTOCOL_CONFIGURATION_FRAME;
                 u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_BACK_TOOL_AL;
                 u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE] =
-                                                (uBackToolAngle & 0xFF00)>>8;
+                                            (uBackToolAngle & 0xFF00) >> 8;
                 u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE+1] =
-                                                uBackToolAngle & 0x00FF;
+                                            uBackToolAngle & 0x00FF;
                 u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE] =
-                                                (uBackToolLength & 0xFF00)>>8;
+                                            (uBackToolLength & 0xFF00) >> 8;
                 u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE+1] =
-                                                uBackToolLength & 0x00FF;
+                                            uBackToolLength & 0x00FF;
 
                 u8ReceivedConfigParts &= ~CONFIG_BACK_TOOL_AL_MASK_PART;
             }
@@ -346,9 +398,64 @@ void MobileAppHandler::vAssemblyStateMachineFrame(
 
                 u8ReceivedConfigParts &= ~CONFIG_BACK_TOOL_VM_MASK_PART;
             }
+            else if (u8ReceivedConfigParts & CONFIG_TOOLS_RFIDS_MASK_PART
+                 == CONFIG_TOOLS_RFIDS_MASK_PART)
+            {
+                *uCanID = PROTOCOL_CONFIGURATION_FRAME;
+                u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_TOOLS_RFIDS;
+                u8MsgBytes[CONFIG_TOOL_RFID_FRONT_START_BYTE] =
+                            static_cast<uint8_t>((uFrontRFID&0xFF0000) >> 16);
+                u8MsgBytes[CONFIG_TOOL_RFID_FRONT_START_BYTE+1] =
+                            static_cast<uint8_t>((uFrontRFID&0x00FF00) >> 8);
+                u8MsgBytes[CONFIG_TOOL_RFID_FRONT_START_BYTE+2] =
+                            static_cast<uint8_t>((uFrontRFID&0x0000FF));
+                u8MsgBytes[CONFIG_TOOL_RFID_BACK_START_BYTE] =
+                            static_cast<uint8_t>((uBackRFID&0xFF0000) >> 16);
+                u8MsgBytes[CONFIG_TOOL_RFID_BACK_START_BYTE+1] =
+                            static_cast<uint8_t>((uBackRFID&0x00FF00) >> 8);
+                u8MsgBytes[CONFIG_TOOL_RFID_BACK_START_BYTE+2] =
+                            static_cast<uint8_t>((uBackRFID&0x0000FF));
+                u8ReceivedConfigParts &= ~CONFIG_TOOLS_RFIDS_MASK_PART;
+            }
             else
             {
                 *uCanID = 0;
+            }
+            break;
+        case RECEIVED_ENG_ERROR_START:
+            *uCanID = PROTOCOL_ENG_ERROR_START_FRAME;
+            u8MsgBytes[ENG_ERR_NUM_TOTAL_BYTE] = CodesTotal;
+            u8MsgBytes[LAMP_STATE_BYTE] = LampState;
+            break;
+        case RECEIVED_ENG_ERROR:
+            if (!CodeNumberQueue.empty())
+            {
+                *uCanID = PROTOCOL_ENG_ERROR_FRAME;
+                u8MsgBytes[ENG_ERROR_NUM_BYTE] =
+                CodeNumberQueue.front();
+                CodeNumberQueue.pop();
+                uint SPN =
+                SPNQueue.front();
+                SPNQueue.pop();
+                u8MsgBytes[SPN_FIRST_BYTE] =
+                                static_cast<uint8_t>(SPN & 0x0000FF);
+                u8MsgBytes[SPN_FIRST_BYTE+1] =
+                                static_cast<uint8_t>((SPN & 0x00FF00)>>8);
+                u8MsgBytes[SPN_FIRST_BYTE+2] =
+                                static_cast<uint8_t>((SPN & 0xFF0000)>>16);
+                u8MsgBytes[FMI_BYTE] =
+                FMIQueue.front();
+                FMIQueue.pop();
+                u8MsgBytes[OCC_BYTE] =
+                OCCQueue.front();
+                OCCQueue.pop();
+                u8MsgBytes[ENG_ERR_STATE_BYTE] =
+                EngErrStateQueue.front();
+                EngErrStateQueue.pop();
+            }
+            else
+            {
+               *uCanID = 0;
             }
             break;
         default:

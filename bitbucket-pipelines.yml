@@ -1,4 +1,4 @@
-image: docker:git
+image: docker:18-git
 
 pipelines:
   default:
@@ -22,7 +22,7 @@ pipelines:
            - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci .industrial_ci -b master
            - git clone https://github.com/panpawelchmiel/agribot_msgs.git
            - git clone https://github.com/panpawelchmiel/agribot_common.git
-           - .industrial_ci/bitbucket.sh  ROS_DISTRO="melodic" UPSTREAM_WORKSPACE="agribot_msgs agribot_common"
+           - .industrial_ci/bitbucket.sh BUILDER="colcon" ROS_DISTRO="melodic" UPSTREAM_WORKSPACE="agribot_msgs agribot_common"
 
 definitions:
   services:

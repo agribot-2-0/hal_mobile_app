@@ -130,7 +130,6 @@ int main(int argc, char **argv)
               ManualSteeringMsg.circle_radius =
                 CommHandlerControl.fGetManualRadius();
               PublishManualSteering.publish(ManualSteeringMsg);
-
               CommHandlerControl.vAssemblyStateMachineFrame(
                                 &uCanID, u8MsgBytes, RECEIVED_MANUAL_STEERING);
               vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);

@@ -133,17 +133,20 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
         message = FramesQueue.front();
         if ((PROTOCOL_ARC_FRAME&ADDR_MASK) == (message.can_id&ADDR_MASK))
         {
-            int8_t i8VeloSign =
-                message.data[LIN_VELO_SIGN_BYTE] == 0 ? BACKWARD:FORWARD;
-            int8_t i8DirectionSign = message.data[DIRECTION_SIGN_BYTE]
-                == 0 ? RIGHT_ARCH:LEFT_ARCH;
-            dManualLinearVelo =
-                (static_cast<float>(i16GetTwoBytes(LIN_VELO_BYTE, message))*
-                i8VeloSign) / LIN_VELO_PARSE_CONST;
-            dRadius = (static_cast<float>
-                (i16GetTwoBytes(RADIUS_BYTE, message)) * i8DirectionSign)
-                / RADIUS_PARSE_CONST;
-            u16Status |= RECEIVED_MANUAL_STEERING;
+            if (message.can_dlc > 2)
+            {
+                int8_t i8VeloSign =
+                    message.data[LIN_VELO_SIGN_BYTE] == 0 ? BACKWARD:FORWARD;
+                int8_t i8DirectionSign = message.data[DIRECTION_SIGN_BYTE]
+                    == 0 ? RIGHT_ARCH:LEFT_ARCH;
+                dManualLinearVelo =
+                   (static_cast<float>(i16GetTwoBytes(LIN_VELO_BYTE, message))*
+                   i8VeloSign) / LIN_VELO_PARSE_CONST;
+                dRadius = (static_cast<float>
+                    (i16GetTwoBytes(RADIUS_BYTE, message)) * i8DirectionSign)
+                    / RADIUS_PARSE_CONST;
+                u16Status |= RECEIVED_MANUAL_STEERING;
+            }
         }
         else if ((PROTOCOL_HANDSHAKE_FRAME&ADDR_MASK) ==
                  (message.can_id&ADDR_MASK))

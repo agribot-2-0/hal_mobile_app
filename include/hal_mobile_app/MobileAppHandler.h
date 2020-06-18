@@ -23,6 +23,7 @@ class MobileAppHandler: public AgribotComponent
 {
     Can CanHandler;
     std::queue<can_frame> FramesQueue;
+    bool bSendToController = false;
     double dManualLinearVelo = 0;
     double dRadius = 0;
     std::queue<uint8_t> ProtocolErrorTypeQueue;
@@ -89,7 +90,11 @@ class MobileAppHandler: public AgribotComponent
     void vSetChosenTask(std::string strTaskName);
     // returns the chosen task name
     std::string strGetTaskName();
-
+    // the timer callback for setting the trigger bSendToController
+    // for the proper frequency of commands for the controller
+    void vSetTriggerForController();
+    // return the state of trigger, reading the trigger true resets it
+    bool vReadTriggerForController();
     // simulation part
     void vCreateSimStateMachineAppFrame(
         uint* uCanID, uint8_t *u8MsgBytes);

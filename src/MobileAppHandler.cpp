@@ -70,6 +70,7 @@
 MobileAppHandler::MobileAppHandler(char* pchCanChannel)
 {
     CanHandler.iInitialize(pchCanChannel);
+    bSendToController = false;
     dRadius = 0;
     dManualLinearVelo = 0;
 
@@ -114,6 +115,24 @@ MobileAppHandler::~MobileAppHandler()
     {
         FramesQueue.pop();
     }
+}
+
+bool MobileAppHandler::vReadTriggerForController()
+{
+    if (bSendToController)
+    {
+        bSendToController = false;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+void MobileAppHandler::vSetTriggerForController()
+{
+    bSendToController = true;
 }
 
 int16_t MobileAppHandler::i16GetTwoBytes(

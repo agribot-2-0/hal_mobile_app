@@ -14,6 +14,11 @@
 
 MobileAppHandler CommHandlerControl(USED_CAN);
 
+void synchro_callback(const ros::TimerEvent& event)
+{
+  CommHandlerControl.vSetTriggerForController();
+}
+
 void vAppCommandsSimulationEventsCallback(
   const agribot_msgs::AgribotMobileAppFrame::ConstPtr& ptrMsg)
 {
@@ -86,6 +91,9 @@ int main(int argc, char **argv)
       vAppCommandsSimulationEventsCallback);
     }
 
+    // synchronization timer to achieve +-3Hz signal for kinematic control
+    ros::Timer timer = nh.createTimer(ros::Duration(0.3), synchro_callback);
+
     ros::Rate loop_rate(10);
 
     agribot_msgs::AgribotMobileAppFrame FrameMsg;
@@ -129,11 +137,14 @@ int main(int argc, char **argv)
                 CommHandlerControl.fGetManualLinearVelo();
               ManualSteeringMsg.circle_radius =
                 CommHandlerControl.fGetManualRadius();
-              PublishManualSteering.publish(ManualSteeringMsg);
-              CommHandlerControl.vAssemblyStateMachineFrame(
+              if (CommHandlerControl.vReadTriggerForController())
+              {
+                PublishManualSteering.publish(ManualSteeringMsg);
+                CommHandlerControl.vAssemblyStateMachineFrame(
                                 &uCanID, u8MsgBytes, RECEIVED_MANUAL_STEERING);
-              vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-              StateMachinePub.publish(FrameMsg);
+                vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
+                StateMachinePub.publish(FrameMsg);
+              }
           }
           if ((u16Status&RECEIVED_MANUAL_MODE_COMF) ==
               RECEIVED_MANUAL_MODE_COMF)

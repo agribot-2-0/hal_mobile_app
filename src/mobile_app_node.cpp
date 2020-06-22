@@ -130,21 +130,21 @@ int main(int argc, char **argv)
           ErrorIndicator.data = 0;
           CommHandlerControl.vReceiveCanFrames();
           u16Status = CommHandlerControl.u16ParseCanFrames();
-          if ((u16Status&RECEIVED_MANUAL_STEERING) ==
-              RECEIVED_MANUAL_STEERING)
+          if(CommHandlerControl.bCheckFreshArcData() &&
+             CommHandlerControl.vReadTriggerForController())
+          //if ((u16Status&RECEIVED_MANUAL_STEERING) ==
+          //   RECEIVED_MANUAL_STEERING)
           {
+              CommHandlerControl.vResetArcReadTriggers();
               ManualSteeringMsg.linear_velocity =
                 CommHandlerControl.fGetManualLinearVelo();
               ManualSteeringMsg.circle_radius =
                 CommHandlerControl.fGetManualRadius();
-              if (CommHandlerControl.vReadTriggerForController())
-              {
-                PublishManualSteering.publish(ManualSteeringMsg);
-                CommHandlerControl.vAssemblyStateMachineFrame(
-                                &uCanID, u8MsgBytes, RECEIVED_MANUAL_STEERING);
-                vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-                StateMachinePub.publish(FrameMsg);
-              }
+              PublishManualSteering.publish(ManualSteeringMsg);
+              CommHandlerControl.vAssemblyStateMachineFrame(
+                              &uCanID, u8MsgBytes, RECEIVED_MANUAL_STEERING);
+              vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
+              StateMachinePub.publish(FrameMsg);
           }
           if ((u16Status&RECEIVED_MANUAL_MODE_COMF) ==
               RECEIVED_MANUAL_MODE_COMF)

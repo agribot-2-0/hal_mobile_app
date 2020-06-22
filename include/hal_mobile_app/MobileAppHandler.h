@@ -24,6 +24,7 @@ class MobileAppHandler: public AgribotComponent
     Can CanHandler;
     std::queue<can_frame> FramesQueue;
     bool bSendToController = false;
+    bool bArcFreshData = false;
     double dManualLinearVelo = 0;
     double dRadius = 0;
     std::queue<uint8_t> ProtocolErrorTypeQueue;
@@ -95,6 +96,10 @@ class MobileAppHandler: public AgribotComponent
     void vSetTriggerForController();
     // return the state of trigger, reading the trigger true resets it
     bool vReadTriggerForController();
+    // return the fresh arc data indicator
+    bool bCheckFreshArcData();
+    // clears the triggers
+    void vResetArcReadTriggers();
     // simulation part
     void vCreateSimStateMachineAppFrame(
         uint* uCanID, uint8_t *u8MsgBytes);

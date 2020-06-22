@@ -71,6 +71,7 @@ MobileAppHandler::MobileAppHandler(char* pchCanChannel)
 {
     CanHandler.iInitialize(pchCanChannel);
     bSendToController = false;
+    bArcFreshData = false;
     dRadius = 0;
     dManualLinearVelo = 0;
 
@@ -119,20 +120,23 @@ MobileAppHandler::~MobileAppHandler()
 
 bool MobileAppHandler::vReadTriggerForController()
 {
-    if (bSendToController)
-    {
-        bSendToController = false;
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+    return bSendToController;
 }
 
 void MobileAppHandler::vSetTriggerForController()
 {
     bSendToController = true;
+}
+
+bool MobileAppHandler::bCheckFreshArcData()
+{
+    return bArcFreshData;
+}
+
+void MobileAppHandler::vResetArcReadTriggers()
+{
+    bArcFreshData = false;
+    bSendToController = false;
 }
 
 int16_t MobileAppHandler::i16GetTwoBytes(
@@ -164,6 +168,7 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
                 dRadius = (static_cast<float>
                     (i16GetTwoBytes(RADIUS_BYTE, message)) * i8DirectionSign)
                     / RADIUS_PARSE_CONST;
+                bArcFreshData = true;
                 u16Status |= RECEIVED_MANUAL_STEERING;
             }
         }

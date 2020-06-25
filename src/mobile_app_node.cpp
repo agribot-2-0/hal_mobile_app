@@ -130,10 +130,10 @@ int main(int argc, char **argv)
           ErrorIndicator.data = 0;
           CommHandlerControl.vReceiveCanFrames();
           u16Status = CommHandlerControl.u16ParseCanFrames();
-          if(CommHandlerControl.bCheckFreshArcData() &&
-             CommHandlerControl.vReadTriggerForController())
-          //if ((u16Status&RECEIVED_MANUAL_STEERING) ==
+          // if ((u16Status&RECEIVED_MANUAL_STEERING) ==
           //   RECEIVED_MANUAL_STEERING)
+          if ((CommHandlerControl.bCheckFreshArcData() &&
+             CommHandlerControl.vReadTriggerForController()))
           {
               CommHandlerControl.vResetArcReadTriggers();
               ManualSteeringMsg.linear_velocity =

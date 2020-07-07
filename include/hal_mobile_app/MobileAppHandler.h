@@ -1,3 +1,7 @@
+/*
+* Copyright (C) 2020 Agribot. All rights reserved.
+*/
+
 #pragma once
 
 #include <agribot_msgs/AgribotMobileAppFrame.h>

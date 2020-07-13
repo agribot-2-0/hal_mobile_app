@@ -6,6 +6,7 @@
 #include <ros/console.h>
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/AgribotManualControl.h>
+#include <agribot_msgs/AgribotAppErrorFlag.h>
 #include <std_msgs/Int32.h>
 #include <industrial_msgs/RobotMode.h>
 #include <geometry_msgs/Twist.h>
@@ -13,10 +14,11 @@
 #include <std_msgs/String.h>
 #include <sstream>
 
-#define USED_CAN "can1"
 #define HEADER_STRING_MOB_APP_FRAME "mobile_app_commands_link"
 
-MobileAppHandler CommHandlerControl(USED_CAN);
+const char cestrUsedCAN[] = "can1";
+
+MobileAppHandler CommHandlerControl(cestrUsedCAN);
 
 void synchro_callback(const ros::TimerEvent& event)
 {
@@ -80,8 +82,8 @@ int main(int argc, char **argv)
     ("/agribot/state_machine/mode", 1);
     // Topic used to communicate change of state to the state machine
     ros::Publisher StateMachineErrorPub = nh.advertise
-    <std_msgs::Int32>
-    ("/agribot/state_machine/error", 1);
+    <agribot_msgs::AgribotAppErrorFlag>
+    ("/agribot/state_machine/error", 2);
     // Topic used to read the path name from task config file
     ros::Subscriber AppTaskChoosedEventsSub = nh.subscribe
     ("/agribot/chosen_task_name", 1,
@@ -103,7 +105,7 @@ int main(int argc, char **argv)
     agribot_msgs::AgribotMobileAppFrame FrameMsg;
     agribot_msgs::AgribotManualControl ManualSteeringMsg;
     industrial_msgs::RobotMode RobMode;
-    std_msgs::Int32 ErrorIndicator;
+    agribot_msgs::AgribotAppErrorFlag ErrorIndicator;
     uint8_t u8MsgBytes[8];
     uint uCanID = 0;
     uint16_t u16Status = 0x00;
@@ -131,11 +133,9 @@ int main(int argc, char **argv)
       }
       else  // If used on the machine with CAN
       {
-          ErrorIndicator.data = 0;
+          ErrorIndicator.error_flag = ErrorIndicator.NO_APP_ERRORS;
           CommHandlerControl.vReceiveCanFrames();
           u16Status = CommHandlerControl.u16ParseCanFrames();
-          // if ((u16Status&RECEIVED_MANUAL_STEERING) ==
-          //   RECEIVED_MANUAL_STEERING)
           if ((CommHandlerControl.bCheckFreshArcData() &&
              CommHandlerControl.vReadTriggerForController()))
           {
@@ -173,7 +173,7 @@ int main(int argc, char **argv)
           if ((u16Status&RECEIVED_PROTOCOL_ERROR) ==
               RECEIVED_PROTOCOL_ERROR)
           {
-              ErrorIndicator.data = 1;
+              ErrorIndicator.error_flag = ErrorIndicator.APP_PROTOCOL_ERROR;
               StateMachineErrorPub.publish(ErrorIndicator);
               while (true)
               {
@@ -191,7 +191,7 @@ int main(int argc, char **argv)
           if ((u16Status&RECEIVED_MANUALSTEERING_ERROR) ==
                RECEIVED_MANUALSTEERING_ERROR)
           {
-              ErrorIndicator.data = 2;
+              ErrorIndicator.error_flag = ErrorIndicator.APP_MANUAL_ERROR;
               StateMachineErrorPub.publish(ErrorIndicator);
               while (true)
               {
@@ -206,7 +206,7 @@ int main(int argc, char **argv)
                 }
               }
           }
-          if (ErrorIndicator.data == 0)
+          if (ErrorIndicator.error_flag == ErrorIndicator.NO_APP_ERRORS)
           {
               // Send no error to the state machine
               StateMachineErrorPub.publish(ErrorIndicator);

@@ -76,7 +76,7 @@ class MobileAppHandler: public AgribotComponent
 
 
  public:
-    explicit MobileAppHandler(char* pchCanChannel);
+    explicit MobileAppHandler(const char* pchCanChannel);
     ~MobileAppHandler();
     void vReceiveCanFrames();
     uint16_t u16ParseCanFrames();

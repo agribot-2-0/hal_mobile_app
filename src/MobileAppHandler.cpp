@@ -71,9 +71,13 @@
 #define OCC_BYTE 5
 #define ENG_ERR_STATE_BYTE 6
 
-MobileAppHandler::MobileAppHandler(char* pchCanChannel)
+#define JOYSTICK_CONFIRMATION_FRAME_LENGTH 2
+
+MobileAppHandler::MobileAppHandler(const char* pchCanChannel)
 {
-    CanHandler.iInitialize(pchCanChannel);
+    char char_conversion[4];
+    strncpy(char_conversion, pchCanChannel, sizeof char_conversion);
+    CanHandler.iInitialize(char_conversion);
     bSendToController = false;
     bArcFreshData = false;
     dRadius = 0;
@@ -160,7 +164,7 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
         message = FramesQueue.front();
         if ((PROTOCOL_ARC_FRAME&ADDR_MASK) == (message.can_id&ADDR_MASK))
         {
-            if (message.can_dlc > 2)
+            if (message.can_dlc > JOYSTICK_CONFIRMATION_FRAME_LENGTH)
             {
                 int8_t i8VeloSign =
                     message.data[LIN_VELO_SIGN_BYTE] == 0 ? BACKWARD:FORWARD;

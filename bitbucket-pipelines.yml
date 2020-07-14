@@ -11,8 +11,8 @@ pipelines:
          name: "Check cpplint"
          script:
            - apk add --update bash coreutils tar python3 py3-pip
-           - pip3 install cpplint
-           - cpplint --recursive src/* include/*
+           - pip3 install cpplint==1.4.6
+           - cpplint --recursive .
      - step:
          name: "ROS build"
          services:

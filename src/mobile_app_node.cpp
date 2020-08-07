@@ -7,10 +7,10 @@
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/AgribotManualControl.h>
 #include <agribot_msgs/AgribotAppErrorFlag.h>
-#include <std_msgs/Int32.h>
 #include <industrial_msgs/RobotMode.h>
 #include <geometry_msgs/Twist.h>
 #include <hal_mobile_app/MobileAppHandler.h>
+#include <std_msgs/Int32.h>
 #include <std_msgs/String.h>
 #include <sstream>
 
@@ -75,6 +75,8 @@ int main(int argc, char** argv)
       nh.advertise<agribot_msgs::AgribotAppErrorFlag>("/agribot/state_machine/error", 2);
   // Topic used to read the path name from task config file
   ros::Subscriber AppTaskChoosedEventsSub = nh.subscribe("/agribot/chosen_task_name", 1, vAppTaskChoosedEventCallback);
+  // Topic used to read the path name from task config file
+  ros::Publisher StateMachineTaskPub = nh.advertise<std_msgs::String>("/agribot/state_machine/task", 1);
 
   if (bSimulation == true)
   {
@@ -91,6 +93,11 @@ int main(int argc, char** argv)
   agribot_msgs::AgribotManualControl ManualSteeringMsg;
   industrial_msgs::RobotMode RobMode;
   agribot_msgs::AgribotAppErrorFlag ErrorIndicator;
+  // workaround feature
+  // for instant sending of the default configuration
+  // without the option to choose
+  std_msgs::String task_name;
+  bool latching_configuration = false;
   uint8_t u8MsgBytes[8];
   uint uCanID = 0;
   uint16_t u16Status = 0x00;
@@ -138,13 +145,23 @@ int main(int argc, char** argv)
         vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
         StateMachinePub.publish(FrameMsg);
       }
-      if ((u16Status & RECEIVED_AUTO_STEERING) == RECEIVED_AUTO_STEERING)
+      if ((u16Status & RECEIVED_AUTO_STEERING) == RECEIVED_AUTO_STEERING || latching_configuration)
       {
-        RobMode.val = RobMode.AUTO;
-        StateMachineModePub.publish(RobMode);
-        CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_AUTO_STEERING);
-        vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-        StateMachinePub.publish(FrameMsg);
+        if (!latching_configuration)
+        {
+          task_name.data = "test_task_drzewna";
+          StateMachineTaskPub.publish(task_name);
+          latching_configuration = true;
+        }
+        else
+        {
+          RobMode.val = RobMode.AUTO;
+          StateMachineModePub.publish(RobMode);
+          CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_AUTO_STEERING);
+          vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
+          StateMachinePub.publish(FrameMsg);
+          latching_configuration = false;
+        }
       }
       if ((u16Status & RECEIVED_PROTOCOL_ERROR) == RECEIVED_PROTOCOL_ERROR)
       {

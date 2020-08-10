@@ -127,12 +127,21 @@ int main(int argc, char** argv)
       ErrorIndicator.error_flag = ErrorIndicator.NO_APP_ERRORS;
       CommHandlerControl.vReceiveCanFrames();
       u16Status = CommHandlerControl.u16ParseCanFrames();
-      if ((CommHandlerControl.bCheckFreshArcData() && CommHandlerControl.vReadTriggerForController()))
+      if (CommHandlerControl.vReadTriggerForController())
       {
+        if (CommHandlerControl.bCheckFreshArcData())
+        {
+          ManualSteeringMsg.linear_velocity = CommHandlerControl.fGetManualLinearVelo();
+          ManualSteeringMsg.circle_radius = CommHandlerControl.fGetManualRadius();
+          PublishManualSteering.publish(ManualSteeringMsg);
+        }
+        else
+        {
+          ManualSteeringMsg.linear_velocity = 0;
+          ManualSteeringMsg.circle_radius = 0;
+          PublishManualSteering.publish(ManualSteeringMsg);
+        }
         CommHandlerControl.vResetArcReadTriggers();
-        ManualSteeringMsg.linear_velocity = CommHandlerControl.fGetManualLinearVelo();
-        ManualSteeringMsg.circle_radius = CommHandlerControl.fGetManualRadius();
-        PublishManualSteering.publish(ManualSteeringMsg);
         CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_MANUAL_STEERING);
         vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
         StateMachinePub.publish(FrameMsg);

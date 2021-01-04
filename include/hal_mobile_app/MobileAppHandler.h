@@ -8,6 +8,7 @@
 #include <agribot_msgs/ToolManagerScan.h>
 #include <agribot_common/Can.h>
 #include <agribot_common/AgribotComponent.h>
+#include <vector>
 #include <queue>
 #include <cmath>
 #include <string>

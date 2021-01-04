@@ -14,6 +14,7 @@
 #define PROTOCOL_ERROR_FRAMES 0x0C8
 #define PROTOCOL_MAN_ERROR_FRAMES 0x0C9
 #define PROTOCOL_CONFIGURATION_FRAME 0x96
+constexpr uint8_t rfid_tags_frame = 0x97;
 #define PROTOCOL_ENG_ERROR_START_FRAME 0x104
 #define PROTOCOL_ENG_ERROR_FRAME 0x105
 
@@ -23,6 +24,13 @@
 #define LIN_VELO_BYTE 4
 #define RADIUS_PARSE_CONST 10
 #define LIN_VELO_PARSE_CONST 100
+
+// rfid tags scan:
+constexpr uint8_t scan_trigger_frame = 0x01;
+constexpr uint8_t detected_tags_frame = 0x02;
+constexpr uint8_t selected_antenna_byte = 0x01;
+constexpr uint8_t front_ant_selected = 0x01;
+constexpr uint8_t back_ant_selected = 0x02;
 
 #define CONFIG_TYPE_BYTE 0
 #define CONFIG_FRONT_TOOL_AL 1
@@ -214,6 +222,20 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
       OCCQueue.push(message.data[OCC_BYTE]);
       EngErrStateQueue.push(message.data[ENG_ERR_STATE_BYTE]);
       u16Status |= RECEIVED_ENG_ERROR;
+    }
+    else if ((rfid_tags_frame & ADDR_MASK) == (message.can_id & ADDR_MASK))
+    {
+      if (message.data[CONFIG_TYPE_BYTE] == scan_trigger_frame)
+      {
+        if ((message.data[selected_antenna_byte] & front_ant_selected) == front_ant_selected) // Front
+        {
+          scan_front_ = true;
+        }
+        if ((message.data[selected_antenna_byte] & back_ant_selected) == back_ant_selected) // Back
+        {
+          scan_back_ = true;
+        }
+      }
     }
     else if ((PROTOCOL_CONFIGURATION_FRAME & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
@@ -510,4 +532,43 @@ bool MobileAppHandler::cleanup()
 bool MobileAppHandler::bDataPendingSimulation()
 {
   return bFreshData;
+}
+
+bool MobileAppHandler::scanFrontTriggered()
+{
+  if (scan_front_)
+  {
+    scan_front_ = false;
+    return true;
+  }
+  return false;
+}
+
+bool MobileAppHandler::scanBackTriggered()
+{
+  if (scan_back_)
+  {
+    scan_back_ = false;
+    return true;
+  }
+  return false;
+}
+
+void MobileAppHandler::sendRfidTagsIds(const uint8_t sel_ant, const std::vector<uint16_t> ids)
+{
+  for (auto tag_id: ids)
+  {
+    can_frame message;
+    message.can_id = rfid_tags_frame;
+    message.can_dlc = 4;
+    message.data[0] = detected_tags_frame; //com byte
+    message.data[1] = sel_ant;
+    message.data[2] = (tag_id >> 8)&0xff;
+    message.data[3] = (tag_id)&0xff;
+    message.data[4] = 0;
+    message.data[5] = 0;
+    message.data[6] = 0;
+    message.data[7] = 0;
+    CanHandler.iSendFrame(&message);
+  }
 }

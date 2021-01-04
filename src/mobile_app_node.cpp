@@ -77,6 +77,10 @@ int main(int argc, char** argv)
   ros::Subscriber AppTaskChoosedEventsSub = nh.subscribe("/agribot/chosen_task_name", 1, vAppTaskChoosedEventCallback);
   // Topic used to read the path name from task config file
   ros::Publisher StateMachineTaskPub = nh.advertise<std_msgs::String>("/agribot/state_machine/task", 1);
+  // The client of scan tags service
+  ros::ServiceClient rfid_tags_scanner_client =
+    nh.serviceClient<agribot_msgs::ToolManagerScan>("agribot/tool_management/scan");
+  agribot_msgs::ToolManagerScan rfid_tags_scanner_srv;
 
   if (bSimulation == true)
   {
@@ -242,6 +246,28 @@ int main(int argc, char** argv)
             StateMachinePub.publish(FrameMsg);
           }
         }
+      }
+    }
+    // Tool manager RFID tools scanning
+    if (CommHandlerControl.scanFrontTriggered())
+    {
+      rfid_tags_scanner_srv.request.requested_state = rfid_tags_scanner_srv.request.SCAN_FRONT;
+      if (rfid_tags_scanner_client.call(rfid_tags_scanner_srv) &&
+         (rfid_tags_scanner_srv.response.result == rfid_tags_scanner_srv.response.SUCCESS))
+      {
+        CommHandlerControl.sendRfidTagsIds(rfid_tags_scanner_srv.request.SCAN_FRONT,
+                                           rfid_tags_scanner_srv.response.ids);
+      }
+    }
+    if (CommHandlerControl.scanBackTriggered() &&
+       (rfid_tags_scanner_srv.response.result == rfid_tags_scanner_srv.response.SUCCESS))
+    {
+      rfid_tags_scanner_srv.request.requested_state = rfid_tags_scanner_srv.request.SCAN_BACK;
+      if (rfid_tags_scanner_client.call(rfid_tags_scanner_srv) &&
+         (rfid_tags_scanner_srv.response.result == rfid_tags_scanner_srv.response.SUCCESS))
+      {
+        CommHandlerControl.sendRfidTagsIds(rfid_tags_scanner_srv.request.SCAN_BACK,
+                                           rfid_tags_scanner_srv.response.ids);
       }
     }
     ros::spinOnce();

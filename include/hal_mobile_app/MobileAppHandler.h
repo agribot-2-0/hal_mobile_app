@@ -5,8 +5,10 @@
 #pragma once
 
 #include <agribot_msgs/AgribotMobileAppFrame.h>
+#include <agribot_msgs/ToolManagerScan.h>
 #include <agribot_common/Can.h>
 #include <agribot_common/AgribotComponent.h>
+#include <vector>
 #include <queue>
 #include <cmath>
 #include <string>
@@ -63,6 +65,12 @@ class MobileAppHandler : public AgribotComponent
   uint8_t u8BackToolValveBlueFlow;
   uint8_t u8BackToolMotorSpeed;
 
+  // RFID tags scan
+  std::vector <uint32_t> tags_front_;
+  std::vector <uint32_t> tags_back_;
+  bool scan_front_ = false;
+  bool scan_back_ = false;
+
   // simulation part
   bool bFreshData;
   int iCommandId;
@@ -110,4 +118,9 @@ public:
 
   // check if new simulation frame has been received
   bool bDataPendingSimulation();
+
+  // tags scanning
+  bool scanFrontTriggered();
+  bool scanBackTriggered();
+  void sendRfidTagsIds(uint8_t sel_ant, std::vector<uint16_t> ids);
 };

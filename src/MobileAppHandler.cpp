@@ -227,11 +227,11 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
     {
       if (message.data[CONFIG_TYPE_BYTE] == scan_trigger_frame)
       {
-        if ((message.data[selected_antenna_byte] & front_ant_selected) == front_ant_selected) // Front
+        if ((message.data[selected_antenna_byte] & front_ant_selected) == front_ant_selected)  // Front
         {
           scan_front_ = true;
         }
-        if ((message.data[selected_antenna_byte] & back_ant_selected) == back_ant_selected) // Back
+        if ((message.data[selected_antenna_byte] & back_ant_selected) == back_ant_selected)  // Back
         {
           scan_back_ = true;
         }
@@ -556,12 +556,12 @@ bool MobileAppHandler::scanBackTriggered()
 
 void MobileAppHandler::sendRfidTagsIds(const uint8_t sel_ant, const std::vector<uint16_t> ids)
 {
-  for (auto tag_id: ids)
+  for (auto tag_id : ids)
   {
     can_frame message;
     message.can_id = rfid_tags_frame;
     message.can_dlc = 4;
-    message.data[0] = detected_tags_frame; //com byte
+    message.data[0] = detected_tags_frame;  // com byte
     message.data[1] = sel_ant;
     message.data[2] = (tag_id >> 8)&0xff;
     message.data[3] = (tag_id)&0xff;

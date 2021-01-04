@@ -14,7 +14,7 @@
 #define PROTOCOL_ERROR_FRAMES 0x0C8
 #define PROTOCOL_MAN_ERROR_FRAMES 0x0C9
 #define PROTOCOL_CONFIGURATION_FRAME 0x96
-constexpr uint8_t rfid_tags_frame = 0x97;
+constexpr uint8_t rfid_frame = 0x97;
 #define PROTOCOL_ENG_ERROR_START_FRAME 0x104
 #define PROTOCOL_ENG_ERROR_FRAME 0x105
 
@@ -31,6 +31,7 @@ constexpr uint8_t detected_tags_frame = 0x02;
 constexpr uint8_t selected_antenna_byte = 0x01;
 constexpr uint8_t front_ant_selected = 0x01;
 constexpr uint8_t back_ant_selected = 0x02;
+constexpr uint8_t tag_frame_size = 4;
 
 #define CONFIG_TYPE_BYTE 0
 #define CONFIG_FRONT_TOOL_AL 1
@@ -223,7 +224,7 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
       EngErrStateQueue.push(message.data[ENG_ERR_STATE_BYTE]);
       u16Status |= RECEIVED_ENG_ERROR;
     }
-    else if ((rfid_tags_frame & ADDR_MASK) == (message.can_id & ADDR_MASK))
+    else if ((rfid_frame & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
       if (message.data[CONFIG_TYPE_BYTE] == scan_trigger_frame)
       {
@@ -559,12 +560,12 @@ void MobileAppHandler::sendRfidTagsIds(const uint8_t sel_ant, const std::vector<
   for (auto tag_id : ids)
   {
     can_frame message;
-    message.can_id = rfid_tags_frame;
-    message.can_dlc = 4;
+    message.can_id = rfid_frame;
+    message.can_dlc = tag_frame_size;
     message.data[0] = detected_tags_frame;  // com byte
     message.data[1] = sel_ant;
-    message.data[2] = (tag_id >> 8)&0xff;
-    message.data[3] = (tag_id)&0xff;
+    message.data[2] = ((tag_id >> 8) & 0xFF);
+    message.data[3] = (tag_id) & 0xFF;
     message.data[4] = 0;
     message.data[5] = 0;
     message.data[6] = 0;

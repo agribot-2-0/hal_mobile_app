@@ -8,7 +8,6 @@
 #include <agribot_msgs/ToolManagerScan.h>
 #include <agribot_common/Can.h>
 #include <agribot_common/AgribotComponent.h>
-#include <vector>
 #include <queue>
 #include <cmath>
 #include <string>
@@ -66,8 +65,6 @@ class MobileAppHandler : public AgribotComponent
   uint8_t u8BackToolMotorSpeed;
 
   // RFID tags scan
-  std::vector <uint32_t> tags_front_;
-  std::vector <uint32_t> tags_back_;
   bool scan_front_ = false;
   bool scan_back_ = false;
 

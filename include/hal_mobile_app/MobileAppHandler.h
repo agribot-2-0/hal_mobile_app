@@ -120,5 +120,5 @@ public:
   // tags scanning
   bool scanFrontTriggered();
   bool scanBackTriggered();
-  void sendRfidTagsIds(uint8_t sel_ant, std::vector<uint16_t> ids);
+  void sendRfidTagsIds(const uint8_t sel_ant, const std::vector<uint16_t> ids);
 };

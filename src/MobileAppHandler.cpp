@@ -31,7 +31,7 @@ constexpr uint8_t detected_tags_frame = 0x02;
 constexpr uint8_t selected_antenna_byte = 0x01;
 constexpr uint8_t front_ant_selected = 0x01;
 constexpr uint8_t back_ant_selected = 0x02;
-constexpr uint8_t tag_frame_size = 4;
+constexpr uint8_t tag_frame_size = 5;
 
 #define CONFIG_TYPE_BYTE 0
 #define CONFIG_FRONT_TOOL_AL 1
@@ -564,9 +564,9 @@ void MobileAppHandler::sendRfidTagsIds(const uint8_t sel_ant, const std::vector<
     message.can_dlc = tag_frame_size;
     message.data[0] = detected_tags_frame;  // com byte
     message.data[1] = sel_ant;
-    message.data[2] = ((tag_id >> 8) & 0xFF);
-    message.data[3] = (tag_id) & 0xFF;
-    message.data[4] = 0;
+    message.data[2] = ids.size();
+    message.data[3] = ((tag_id >> 8) & 0xFF);
+    message.data[4] = (tag_id) & 0xFF;
     message.data[5] = 0;
     message.data[6] = 0;
     message.data[7] = 0;

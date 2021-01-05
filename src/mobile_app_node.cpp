@@ -252,8 +252,8 @@ int main(int argc, char** argv)
     if (CommHandlerControl.scanFrontTriggered())
     {
       rfid_tags_scanner_srv.request.requested_state = rfid_tags_scanner_srv.request.SCAN_FRONT;
-      if (rfid_tags_scanner_client.call(rfid_tags_scanner_srv) &&
-         (rfid_tags_scanner_srv.response.result == rfid_tags_scanner_srv.response.SUCCESS))
+      bool srv_ret = rfid_tags_scanner_client.call(rfid_tags_scanner_srv);
+      if (srv_ret && (rfid_tags_scanner_srv.response.result == rfid_tags_scanner_srv.response.SUCCESS))
       {
         CommHandlerControl.sendRfidTagsIds(rfid_tags_scanner_srv.request.SCAN_FRONT,
                                            rfid_tags_scanner_srv.response.ids);
@@ -263,8 +263,8 @@ int main(int argc, char** argv)
        (rfid_tags_scanner_srv.response.result == rfid_tags_scanner_srv.response.SUCCESS))
     {
       rfid_tags_scanner_srv.request.requested_state = rfid_tags_scanner_srv.request.SCAN_BACK;
-      if (rfid_tags_scanner_client.call(rfid_tags_scanner_srv) &&
-         (rfid_tags_scanner_srv.response.result == rfid_tags_scanner_srv.response.SUCCESS))
+      bool srv_ret = rfid_tags_scanner_client.call(rfid_tags_scanner_srv);
+      if (srv_ret && (rfid_tags_scanner_srv.response.result == rfid_tags_scanner_srv.response.SUCCESS))
       {
         CommHandlerControl.sendRfidTagsIds(rfid_tags_scanner_srv.request.SCAN_BACK,
                                            rfid_tags_scanner_srv.response.ids);

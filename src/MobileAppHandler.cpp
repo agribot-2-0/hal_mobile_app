@@ -570,6 +570,6 @@ void MobileAppHandler::sendRfidTagsIds(const uint8_t sel_ant, const std::vector<
     message.data[5] = 0;
     message.data[6] = 0;
     message.data[7] = 0;
-    CanHandler.iSendFrame(&message);
+    CanHandler.iSendFrameNonExtended(&message);
   }
 }

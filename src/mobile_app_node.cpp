@@ -41,7 +41,19 @@ void vFillTheMessageObject(agribot_msgs::AgribotMobileAppFrame* ptrFrameMsg, uin
   ptrFrameMsg->header.stamp = ros::Time::now();
   ptrFrameMsg->can_id = uCanID;
   for (int i = 0; i < 8; i++)
+  {
     ptrFrameMsg->can_byte_array[i] = u8MsgBytes[i];
+  }
+}
+
+auto castMsgVectorToStdVec(std::vector<agribot_msgs::Tag>& msg_vec)  // NOLINT(runtime/references)
+{
+  std::vector<std::vector<uint8_t>> std_vec;
+  for (agribot_msgs::Tag id : msg_vec)
+  {
+    std_vec.push_back(std::vector<uint8_t>(id.epc.begin(), id.epc.end()));
+  }
+  return std_vec;
 }
 
 int main(int argc, char** argv)
@@ -256,7 +268,7 @@ int main(int argc, char** argv)
       if (srv_ret && (rfid_tags_scanner_srv.response.result == rfid_tags_scanner_srv.response.SUCCESS))
       {
         CommHandlerControl.sendRfidTagsIds(rfid_tags_scanner_srv.request.SCAN_FRONT,
-                                           rfid_tags_scanner_srv.response.ids);
+                                           castMsgVectorToStdVec(rfid_tags_scanner_srv.response.ids));
       }
     }
     if (CommHandlerControl.scanBackTriggered() &&
@@ -267,7 +279,7 @@ int main(int argc, char** argv)
       if (srv_ret && (rfid_tags_scanner_srv.response.result == rfid_tags_scanner_srv.response.SUCCESS))
       {
         CommHandlerControl.sendRfidTagsIds(rfid_tags_scanner_srv.request.SCAN_BACK,
-                                           rfid_tags_scanner_srv.response.ids);
+                                           castMsgVectorToStdVec(rfid_tags_scanner_srv.response.ids));
       }
     }
     ros::spinOnce();

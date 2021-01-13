@@ -27,11 +27,14 @@ constexpr uint8_t rfid_frame = 0x97;
 
 // rfid tags scan:
 constexpr uint8_t scan_trigger_frame = 0x01;
-constexpr uint8_t detected_tags_frame = 0x02;
+constexpr uint8_t detected_tags_start_frame = 0x02;
 constexpr uint8_t selected_antenna_byte = 0x01;
 constexpr uint8_t front_ant_selected = 0x01;
 constexpr uint8_t back_ant_selected = 0x02;
-constexpr uint8_t tag_frame_size = 5;
+constexpr uint8_t tag_start_frame_size = 3;
+constexpr uint8_t tag_data_frame_size = 8;
+constexpr uint8_t data_frame_epc_payload = 7;
+
 
 #define CONFIG_TYPE_BYTE 0
 #define CONFIG_FRONT_TOOL_AL 1
@@ -555,21 +558,38 @@ bool MobileAppHandler::scanBackTriggered()
   return false;
 }
 
-void MobileAppHandler::sendRfidTagsIds(const uint8_t sel_ant, const std::vector<uint16_t> ids)
+void MobileAppHandler::sendRfidTagsIds(const uint8_t sel_ant,
+                                       const std::vector<std::vector<uint8_t>>& ids)  // NOLINT(runtime/references)
 {
-  for (auto tag_id : ids)
+  std::size_t cnt = 0;
+  std::size_t com = 2;
+  can_frame message;
+  for (const auto& tag_id : ids)
   {
-    can_frame message;
+    // Start frame with com = 2. It contains information about EPC length and selected antenna
     message.can_id = rfid_frame;
-    message.can_dlc = tag_frame_size;
-    message.data[0] = detected_tags_frame;  // com byte
+    message.can_dlc = tag_start_frame_size;
+    message.data[0] = detected_tags_start_frame;  // com byte
     message.data[1] = sel_ant;
-    message.data[2] = ids.size();
-    message.data[3] = ((tag_id >> 8) & 0xFF);
-    message.data[4] = (tag_id) & 0xFF;
-    message.data[5] = 0;
-    message.data[6] = 0;
-    message.data[7] = 0;
+    message.data[2] = tag_id.size();  // number of EPC bytes
     CanHandler.iSendFrameNonExtended(&message);
+    bzero(&message, sizeof(can_frame));
+    // Frames with com = 3 and higher. They will contain EPC byte data 
+    for (const auto& epc_byte : tag_id)
+    {
+      ++cnt;
+      message.data[cnt] = epc_byte;
+      if(cnt % data_frame_epc_payload == 0)  // data frame payload exceeded
+      {
+        ++com;
+        CanHandler.iSendFrameNonExtended(&message);
+        bzero(&message, sizeof(can_frame));
+        // create next frame header:
+        message.can_id = rfid_frame;
+        message.can_dlc = tag_data_frame_size;
+        message.data[0] = com;
+        cnt = 0;
+      }
+    }
   }
 }

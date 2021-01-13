@@ -577,11 +577,15 @@ void MobileAppHandler::sendRfidTagsIds(const uint8_t sel_ant,
     // Frames with com = 3 and higher. They will contain EPC byte data 
     for (const auto& epc_byte : tag_id)
     {
-      ++cnt;
+      std::cout << "cnt: " << (int)cnt << std::endl;
+      std::cout << "byte: " << (int)epc_byte << std::endl;
+      cnt++;
       message.data[cnt] = epc_byte;
-      if(cnt % data_frame_epc_payload == 0)  // data frame payload exceeded
+      if (cnt % data_frame_epc_payload == 0 ||
+          cnt >= (tag_id.size() - 1) % data_frame_epc_payload)  // data frame payload exceeded
       {
         ++com;
+        std::cout << "sending frame" << std::endl;
         CanHandler.iSendFrameNonExtended(&message);
         bzero(&message, sizeof(can_frame));
         // create next frame header:

@@ -18,7 +18,6 @@ constexpr uint8_t rfid_frame = 0x97;
 #define PROTOCOL_ENG_ERROR_START_FRAME 0x104
 #define PROTOCOL_ENG_ERROR_FRAME 0x105
 
-
 #define LIN_VELO_SIGN_BYTE 0
 #define DIRECTION_SIGN_BYTE 1
 #define RADIUS_BYTE 2

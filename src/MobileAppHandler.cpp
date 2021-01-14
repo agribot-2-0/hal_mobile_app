@@ -167,7 +167,7 @@ int16_t MobileAppHandler::i16GetTwoBytes(uint8_t u8StartBit, can_frame CanFrame)
   return ((int16_t)CanFrame.data[u8StartBit]) << 8 | ((int16_t)CanFrame.data[u8StartBit + 1]);
 }
 
-bool MobileAppHandler::rfidIsAntSelected(const can_frame& msg, uint8_t sel_ant)
+bool MobileAppHandler::bRfidIsAntSelected(const can_frame& msg, uint8_t sel_ant)
 {
   if (msg.data[CONFIG_TYPE_BYTE] == scan_trigger_frame)
   {
@@ -245,8 +245,8 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
     }
     else if ((rfid_frame & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
-      scan_front_ = rfidIsAntSelected(message, front_ant_selected);
-      scan_back_ = rfidIsAntSelected(message, back_ant_selected);
+      scan_front_ = bRfidIsAntSelected(message, front_ant_selected);
+      scan_back_ = bRfidIsAntSelected(message, back_ant_selected);
     }
     else if ((PROTOCOL_CONFIGURATION_FRAME & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
@@ -545,7 +545,7 @@ bool MobileAppHandler::bDataPendingSimulation()
   return bFreshData;
 }
 
-bool MobileAppHandler::scanFrontTriggered()
+bool MobileAppHandler::bScanFrontTriggered()
 {
   if (scan_front_)
   {
@@ -555,7 +555,7 @@ bool MobileAppHandler::scanFrontTriggered()
   return false;
 }
 
-bool MobileAppHandler::scanBackTriggered()
+bool MobileAppHandler::bScanBackTriggered()
 {
   if (scan_back_)
   {
@@ -565,8 +565,8 @@ bool MobileAppHandler::scanBackTriggered()
   return false;
 }
 
-void MobileAppHandler::sendRfidTagsIds(const uint8_t sel_ant,
-                                       const std::vector<std::vector<uint8_t>>& ids)  // NOLINT(runtime/references)
+void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
+                                        const std::vector<std::vector<uint8_t>>& ids)  // NOLINT(runtime/references)
 {
   std::size_t cnt = 0;
   uint8_t com = detected_tags_start_frame;

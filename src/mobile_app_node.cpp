@@ -261,25 +261,25 @@ int main(int argc, char** argv)
       }
     }
     // Tool manager RFID tools scanning
-    if (CommHandlerControl.scanFrontTriggered())
+    if (CommHandlerControl.bScanFrontTriggered())
     {
       rfid_tags_scanner_srv.request.requested_state = rfid_tags_scanner_srv.request.SCAN_FRONT;
       bool srv_ret = rfid_tags_scanner_client.call(rfid_tags_scanner_srv);
       if (srv_ret && (rfid_tags_scanner_srv.response.result == rfid_tags_scanner_srv.response.SUCCESS))
       {
-        CommHandlerControl.sendRfidTagsIds(rfid_tags_scanner_srv.request.SCAN_FRONT,
-                                           castMsgVectorToStdVec(rfid_tags_scanner_srv.response.ids));
+        CommHandlerControl.vSendRfidTagsIds(rfid_tags_scanner_srv.request.SCAN_FRONT,
+                                            castMsgVectorToStdVec(rfid_tags_scanner_srv.response.ids));
       }
     }
-    if (CommHandlerControl.scanBackTriggered() &&
+    if (CommHandlerControl.bScanBackTriggered() &&
        (rfid_tags_scanner_srv.response.result == rfid_tags_scanner_srv.response.SUCCESS))
     {
       rfid_tags_scanner_srv.request.requested_state = rfid_tags_scanner_srv.request.SCAN_BACK;
       bool srv_ret = rfid_tags_scanner_client.call(rfid_tags_scanner_srv);
       if (srv_ret && (rfid_tags_scanner_srv.response.result == rfid_tags_scanner_srv.response.SUCCESS))
       {
-        CommHandlerControl.sendRfidTagsIds(rfid_tags_scanner_srv.request.SCAN_BACK,
-                                           castMsgVectorToStdVec(rfid_tags_scanner_srv.response.ids));
+        CommHandlerControl.vSendRfidTagsIds(rfid_tags_scanner_srv.request.SCAN_BACK,
+                                            castMsgVectorToStdVec(rfid_tags_scanner_srv.response.ids));
       }
     }
     ros::spinOnce();

@@ -84,6 +84,7 @@ public:
   explicit MobileAppHandler(const char* pchCanChannel);
   ~MobileAppHandler();
   void vReceiveCanFrames();
+  bool rfidIsAntSelected(const can_frame& msg, uint8_t sel_ant);
   uint16_t u16ParseCanFrames();
   float fGetManualRadius();
   float fGetManualLinearVelo();
@@ -120,7 +121,7 @@ public:
   // tags scanning
   bool scanFrontTriggered();
   bool scanBackTriggered();
+
   void sendRfidTagsIds(const uint8_t sel_ant,
                        const std::vector<std::vector<uint8_t>>& ids);   // NOLINT(runtime/references)
-
 };

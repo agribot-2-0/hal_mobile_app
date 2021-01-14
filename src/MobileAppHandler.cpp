@@ -18,6 +18,7 @@ constexpr uint8_t rfid_frame = 0x97;
 #define PROTOCOL_ENG_ERROR_START_FRAME 0x104
 #define PROTOCOL_ENG_ERROR_FRAME 0x105
 
+
 #define LIN_VELO_SIGN_BYTE 0
 #define DIRECTION_SIGN_BYTE 1
 #define RADIUS_BYTE 2
@@ -26,9 +27,13 @@ constexpr uint8_t rfid_frame = 0x97;
 #define LIN_VELO_PARSE_CONST 100
 
 // rfid tags scan:
+constexpr uint8_t selected_antenna_byte = 0x01;
+constexpr uint8_t com_byte = 0;
+constexpr uint8_t sel_ant_byte = 1;
+constexpr uint8_t epc_len_byte = 2;
+
 constexpr uint8_t scan_trigger_frame = 0x01;
 constexpr uint8_t detected_tags_start_frame = 0x02;
-constexpr uint8_t selected_antenna_byte = 0x01;
 constexpr uint8_t front_ant_selected = 0x01;
 constexpr uint8_t back_ant_selected = 0x02;
 constexpr uint8_t tag_start_frame_size = 3;
@@ -162,6 +167,17 @@ int16_t MobileAppHandler::i16GetTwoBytes(uint8_t u8StartBit, can_frame CanFrame)
   return ((int16_t)CanFrame.data[u8StartBit]) << 8 | ((int16_t)CanFrame.data[u8StartBit + 1]);
 }
 
+bool MobileAppHandler::rfidIsAntSelected(const can_frame& msg, uint8_t sel_ant)
+{
+  if (msg.data[CONFIG_TYPE_BYTE] == scan_trigger_frame)
+  {
+    if ((msg.data[selected_antenna_byte] & sel_ant) == sel_ant)
+    {
+      return true;
+    }
+  }
+}
+
 uint16_t MobileAppHandler::u16ParseCanFrames()
 {
   uint8_t u16Status = 0;
@@ -229,17 +245,8 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
     }
     else if ((rfid_frame & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
-      if (message.data[CONFIG_TYPE_BYTE] == scan_trigger_frame)
-      {
-        if ((message.data[selected_antenna_byte] & front_ant_selected) == front_ant_selected)  // Front
-        {
-          scan_front_ = true;
-        }
-        if ((message.data[selected_antenna_byte] & back_ant_selected) == back_ant_selected)  // Back
-        {
-          scan_back_ = true;
-        }
-      }
+      scan_front_ = rfidIsAntSelected(message, front_ant_selected);
+      scan_back_ = rfidIsAntSelected(message, back_ant_selected);
     }
     else if ((PROTOCOL_CONFIGURATION_FRAME & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
@@ -570,9 +577,9 @@ void MobileAppHandler::sendRfidTagsIds(const uint8_t sel_ant,
     // Start frame with com = 2. It contains information about EPC length and selected antenna
     message.can_id = rfid_frame;
     message.can_dlc = tag_start_frame_size;
-    message.data[0] = com;
-    message.data[1] = sel_ant;
-    message.data[2] = tag_id.size();  // number of EPC bytes
+    message.data[com_byte] = com;
+    message.data[sel_ant_byte] = sel_ant;
+    message.data[epc_len_byte] = tag_id.size();  // number of EPC bytes
     CanHandler.iSendFrameNonExtended(&message);
     bzero(message.data, sizeof(uint8_t)*tag_data_frame_size);
     message.can_dlc = tag_data_frame_size;
@@ -583,15 +590,15 @@ void MobileAppHandler::sendRfidTagsIds(const uint8_t sel_ant,
       message.data[cnt % tag_data_frame_size] = epc_byte;
       if (cnt % data_frame_epc_payload == 0)  // data frame payload exceeded or every byte in vector verified
       {
-        com++;  //  increment com byte
-        message.data[0] = com;
+        ++com;  //  increment com byte
+        message.data[com_byte] = com;
         CanHandler.iSendFrameNonExtended(&message);
         bzero(message.data, sizeof(uint8_t)*tag_data_frame_size);
         ++cnt;
       }
     }
-    com++;  //  increment com byte
-    message.data[0] = com;
+    ++com;  //  increment com byte
+    message.data[com_byte] = com;
     CanHandler.iSendFrameNonExtended(&message);
   }
 }

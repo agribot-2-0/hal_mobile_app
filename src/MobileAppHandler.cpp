@@ -579,6 +579,7 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
     message.data[com_byte] = com;
     message.data[sel_ant_byte] = sel_ant;
     message.data[epc_len_byte] = tag_id.size();  // number of EPC bytes
+    usleep(10000);
     CanHandler.iSendFrame(&message, false);
     bzero(message.data, sizeof(uint8_t)*tag_data_frame_size);
     message.can_dlc = tag_data_frame_size;
@@ -591,6 +592,7 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
       {
         ++com;  //  increment com byte
         message.data[com_byte] = com;
+        usleep(10000);
         CanHandler.iSendFrame(&message, false);
         bzero(message.data, sizeof(uint8_t)*tag_data_frame_size);
         ++cnt;
@@ -598,6 +600,7 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
     }
     ++com;  //  increment com byte
     message.data[com_byte] = com;
+    usleep(10000);
     CanHandler.iSendFrame(&message, false);
   }
 }

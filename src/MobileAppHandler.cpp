@@ -562,38 +562,36 @@ void MobileAppHandler::sendRfidTagsIds(const uint8_t sel_ant,
                                        const std::vector<std::vector<uint8_t>>& ids)  // NOLINT(runtime/references)
 {
   std::size_t cnt = 0;
-  std::size_t com = 2;
+  uint8_t com = detected_tags_start_frame;
   can_frame message;
   for (const auto& tag_id : ids)
   {
+    cnt = 0;
     // Start frame with com = 2. It contains information about EPC length and selected antenna
     message.can_id = rfid_frame;
     message.can_dlc = tag_start_frame_size;
-    message.data[0] = detected_tags_start_frame;  // com byte
+    message.data[0] = com;
     message.data[1] = sel_ant;
     message.data[2] = tag_id.size();  // number of EPC bytes
     CanHandler.iSendFrameNonExtended(&message);
-    bzero(&message, sizeof(can_frame));
-    // Frames with com = 3 and higher. They will contain EPC byte data 
+    bzero(message.data, sizeof(uint8_t)*tag_data_frame_size);
+    message.can_dlc = tag_data_frame_size;
+    // EPC bytes transsmision: (com 3 and higher)
     for (const auto& epc_byte : tag_id)
     {
-      std::cout << "cnt: " << (int)cnt << std::endl;
-      std::cout << "byte: " << (int)epc_byte << std::endl;
-      cnt++;
-      message.data[cnt] = epc_byte;
-      if (cnt % data_frame_epc_payload == 0 ||
-          cnt >= (tag_id.size() - 1) % data_frame_epc_payload)  // data frame payload exceeded
+      ++cnt;
+      message.data[cnt % tag_data_frame_size] = epc_byte;
+      if (cnt % data_frame_epc_payload == 0)  // data frame payload exceeded or every byte in vector verified
       {
-        ++com;
-        std::cout << "sending frame" << std::endl;
-        CanHandler.iSendFrameNonExtended(&message);
-        bzero(&message, sizeof(can_frame));
-        // create next frame header:
-        message.can_id = rfid_frame;
-        message.can_dlc = tag_data_frame_size;
+        com++;  //  increment com byte
         message.data[0] = com;
-        cnt = 0;
+        CanHandler.iSendFrameNonExtended(&message);
+        bzero(message.data, sizeof(uint8_t)*tag_data_frame_size);
+        ++cnt;
       }
     }
+    com++;  //  increment com byte
+    message.data[0] = com;
+    CanHandler.iSendFrameNonExtended(&message);
   }
 }

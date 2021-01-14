@@ -122,4 +122,5 @@ public:
   bool scanBackTriggered();
   void sendRfidTagsIds(const uint8_t sel_ant,
                        const std::vector<std::vector<uint8_t>>& ids);   // NOLINT(runtime/references)
+
 };

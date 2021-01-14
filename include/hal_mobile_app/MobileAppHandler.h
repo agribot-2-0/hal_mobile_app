@@ -123,5 +123,5 @@ public:
   bool bScanBackTriggered();
 
   void vSendRfidTagsIds(const uint8_t sel_ant,
-                       const std::vector<std::vector<uint8_t>>& ids);   // NOLINT(runtime/references)
+                        const std::vector<std::vector<uint8_t>>& ids);   // NOLINT(runtime/references)
 };

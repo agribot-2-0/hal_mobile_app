@@ -31,6 +31,8 @@ constexpr uint8_t com_byte = 0;
 constexpr uint8_t sel_ant_byte = 1;
 constexpr uint8_t epc_len_byte = 2;
 
+constexpr uint32_t frame_send_delay = 10000;
+
 constexpr uint8_t scan_trigger_frame = 0x01;
 constexpr uint8_t detected_tags_start_frame = 0x02;
 constexpr uint8_t front_ant_selected = 0x01;
@@ -166,15 +168,15 @@ int16_t MobileAppHandler::i16GetTwoBytes(uint8_t u8StartBit, can_frame CanFrame)
   return ((int16_t)CanFrame.data[u8StartBit]) << 8 | ((int16_t)CanFrame.data[u8StartBit + 1]);
 }
 
+bool MobileAppHandler::bCheckByte(uint8_t frame_byte, uint8_t expected_data)
+{
+  return frame_byte == expected_data;
+}
+
 bool MobileAppHandler::bRfidIsAntSelected(const can_frame& msg, uint8_t sel_ant)
 {
-  if (msg.data[CONFIG_TYPE_BYTE] == scan_trigger_frame)
-  {
-    if ((msg.data[selected_antenna_byte] & sel_ant) == sel_ant)
-    {
-      return true;
-    }
-  }
+  return bCheckByte(msg.data[CONFIG_TYPE_BYTE], scan_trigger_frame) &&
+         bCheckByte((msg.data[selected_antenna_byte] & sel_ant), sel_ant);
 }
 
 uint16_t MobileAppHandler::u16ParseCanFrames()
@@ -579,7 +581,7 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
     message.data[com_byte] = com;
     message.data[sel_ant_byte] = sel_ant;
     message.data[epc_len_byte] = tag_id.size();  // number of EPC bytes
-    usleep(10000);
+    usleep(frame_send_delay);
     CanHandler.iSendFrame(&message, false);
     bzero(message.data, sizeof(uint8_t)*tag_data_frame_size);
     message.can_dlc = tag_data_frame_size;
@@ -592,15 +594,18 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
       {
         ++com;  //  increment com byte
         message.data[com_byte] = com;
-        usleep(10000);
+        usleep(frame_send_delay);
         CanHandler.iSendFrame(&message, false);
         bzero(message.data, sizeof(uint8_t)*tag_data_frame_size);
         ++cnt;
       }
     }
-    ++com;  //  increment com byte
-    message.data[com_byte] = com;
-    usleep(10000);
-    CanHandler.iSendFrame(&message, false);
+    if (--cnt % data_frame_epc_payload != 0)
+    {
+      ++com;  //  increment com byte
+      message.data[com_byte] = com;
+      usleep(frame_send_delay);
+      CanHandler.iSendFrame(&message, false);
+    }
   }
 }

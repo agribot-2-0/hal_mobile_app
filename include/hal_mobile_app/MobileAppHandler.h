@@ -84,6 +84,7 @@ public:
   explicit MobileAppHandler(const char* pchCanChannel);
   ~MobileAppHandler();
   void vReceiveCanFrames();
+  bool bCheckByte(uint8_t frame_byte, uint8_t expected_data);
   bool bRfidIsAntSelected(const can_frame& msg, uint8_t sel_ant);
   uint16_t u16ParseCanFrames();
   float fGetManualRadius();

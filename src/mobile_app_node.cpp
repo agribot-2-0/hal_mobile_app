@@ -57,7 +57,7 @@ auto castMsgVectorToStdVec(std::vector<agribot_msgs::Tag>& msg_vec)  // NOLINT(r
 }
 
 void callRfidScanSrv(ros::ServiceClient client,
-                     agribot_msgs::ToolManagerScan& service,
+                     agribot_msgs::ToolManagerScan& service,  // NOLINT(runtime/references)
                      uint8_t sel_ant)
 {
   service.request.requested_state = sel_ant;

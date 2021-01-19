@@ -14,6 +14,7 @@
 #define PROTOCOL_ERROR_FRAMES 0x0C8
 #define PROTOCOL_MAN_ERROR_FRAMES 0x0C9
 #define PROTOCOL_CONFIGURATION_FRAME 0x96
+constexpr uint16_t rfid_frame = 0x1f4;
 #define PROTOCOL_ENG_ERROR_START_FRAME 0x104
 #define PROTOCOL_ENG_ERROR_FRAME 0x105
 
@@ -23,6 +24,23 @@
 #define LIN_VELO_BYTE 4
 #define RADIUS_PARSE_CONST 10
 #define LIN_VELO_PARSE_CONST 100
+
+// rfid tags scan:
+constexpr uint8_t selected_antenna_byte = 0x01;
+constexpr uint8_t com_byte = 0;
+constexpr uint8_t sel_ant_byte = 1;
+constexpr uint8_t epc_len_byte = 2;
+
+constexpr uint32_t frame_send_delay = 20000;
+
+constexpr uint8_t scan_trigger_frame = 0x01;
+constexpr uint8_t detected_tags_start_frame = 0x02;
+constexpr uint8_t front_ant_selected = 0x01;
+constexpr uint8_t back_ant_selected = 0x02;
+constexpr uint8_t tag_start_frame_size = 3;
+constexpr uint8_t tag_data_frame_size = 8;
+constexpr uint8_t data_frame_epc_payload = 7;
+
 
 #define CONFIG_TYPE_BYTE 0
 #define CONFIG_FRONT_TOOL_AL 1
@@ -150,6 +168,17 @@ int16_t MobileAppHandler::i16GetTwoBytes(uint8_t u8StartBit, can_frame CanFrame)
   return ((int16_t)CanFrame.data[u8StartBit]) << 8 | ((int16_t)CanFrame.data[u8StartBit + 1]);
 }
 
+bool MobileAppHandler::bCheckByte(uint8_t frame_byte, uint8_t expected_data)
+{
+  return frame_byte == expected_data;
+}
+
+bool MobileAppHandler::bRfidIsAntSelected(const can_frame& msg, uint8_t sel_ant)
+{
+  return bCheckByte(msg.data[CONFIG_TYPE_BYTE], scan_trigger_frame) &&
+         bCheckByte((msg.data[selected_antenna_byte] & sel_ant), sel_ant);
+}
+
 uint16_t MobileAppHandler::u16ParseCanFrames()
 {
   uint8_t u16Status = 0;
@@ -214,6 +243,11 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
       OCCQueue.push(message.data[OCC_BYTE]);
       EngErrStateQueue.push(message.data[ENG_ERR_STATE_BYTE]);
       u16Status |= RECEIVED_ENG_ERROR;
+    }
+    else if ((rfid_frame & ADDR_MASK) == (message.can_id & ADDR_MASK))
+    {
+      scan_front_ = bRfidIsAntSelected(message, front_ant_selected);
+      scan_back_ = bRfidIsAntSelected(message, back_ant_selected);
     }
     else if ((PROTOCOL_CONFIGURATION_FRAME & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
@@ -510,4 +544,82 @@ bool MobileAppHandler::cleanup()
 bool MobileAppHandler::bDataPendingSimulation()
 {
   return bFreshData;
+}
+
+bool MobileAppHandler::bScanFrontTriggered()
+{
+  if (scan_front_)
+  {
+    scan_front_ = false;
+    return true;
+  }
+  return false;
+}
+
+bool MobileAppHandler::bScanBackTriggered()
+{
+  if (scan_back_)
+  {
+    scan_back_ = false;
+    return true;
+  }
+  return false;
+}
+
+void MobileAppHandler::setRfidFrameHeader(can_frame& msg,  // NOLINT(runtime/references)
+                                          uint8_t frame_size, uint8_t com_val,
+                                          uint8_t selected_antenna, uint8_t epc_words_cnt)
+{
+  msg.can_id = rfid_frame;
+  msg.can_dlc = frame_size;
+  msg.data[com_byte] = com_val;
+  msg.data[sel_ant_byte] = selected_antenna;
+  msg.data[epc_len_byte] = epc_words_cnt;  // number of EPC bytes
+}
+
+void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
+                                        const std::vector<std::vector<uint8_t>>& ids)  // NOLINT(runtime/references)
+{
+  std::size_t cnt = 0;
+  uint8_t com = detected_tags_start_frame;
+  can_frame message;
+  if (ids.size() == 0)
+  {
+    setRfidFrameHeader(message, tag_start_frame_size, com, sel_ant, ids.size());
+    usleep(frame_send_delay);
+    CanHandler.iSendFrame(&message, false);
+  }
+  for (const auto& tag_id : ids)
+  {
+    cnt = 0;
+    // Start frame with com = 2. It contains information about EPC length and selected antenna
+    message.can_id = rfid_frame;
+    setRfidFrameHeader(message, tag_start_frame_size, com, sel_ant, tag_id.size());
+    usleep(frame_send_delay);
+    CanHandler.iSendFrame(&message, false);
+    bzero(message.data, sizeof(uint8_t)*tag_data_frame_size);
+    message.can_dlc = tag_data_frame_size;
+    // EPC bytes transsmision: (com 3 and higher)
+    for (const auto& epc_byte : tag_id)
+    {
+      ++cnt;
+      message.data[cnt % tag_data_frame_size] = epc_byte;
+      if (cnt % data_frame_epc_payload == 0)  // data frame payload exceeded or every byte in vector verified
+      {
+        ++com;  //  increment com byte
+        message.data[com_byte] = com;
+        usleep(frame_send_delay);
+        CanHandler.iSendFrame(&message, false);
+        bzero(message.data, sizeof(uint8_t)*tag_data_frame_size);
+        ++cnt;
+      }
+    }
+    if (--cnt % data_frame_epc_payload != 0)
+    {
+      ++com;  //  increment com byte
+      message.data[com_byte] = com;
+      usleep(frame_send_delay);
+      CanHandler.iSendFrame(&message, false);
+    }
+  }
 }

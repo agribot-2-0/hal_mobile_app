@@ -41,7 +41,32 @@ void vFillTheMessageObject(agribot_msgs::AgribotMobileAppFrame* ptrFrameMsg, uin
   ptrFrameMsg->header.stamp = ros::Time::now();
   ptrFrameMsg->can_id = uCanID;
   for (int i = 0; i < 8; i++)
+  {
     ptrFrameMsg->can_byte_array[i] = u8MsgBytes[i];
+  }
+}
+
+auto castMsgVectorToStdVec(std::vector<agribot_msgs::Tag>& msg_vec)  // NOLINT(runtime/references)
+{
+  std::vector<std::vector<uint8_t>> std_vec;
+  for (agribot_msgs::Tag id : msg_vec)
+  {
+    std_vec.push_back(std::vector<uint8_t>(id.epc));
+  }
+  return std_vec;
+}
+
+void callRfidScanSrv(ros::ServiceClient client,
+                     agribot_msgs::ToolManagerScan& service,  // NOLINT(runtime/references)
+                     uint8_t sel_ant)
+{
+  service.request.requested_state = sel_ant;
+  bool srv_ret = client.call(service);
+  if (srv_ret && (service.response.result == service.response.SUCCESS))
+  {
+    CommHandlerControl.vSendRfidTagsIds(sel_ant,
+                                        castMsgVectorToStdVec(service.response.ids));
+  }
 }
 
 int main(int argc, char** argv)
@@ -77,6 +102,10 @@ int main(int argc, char** argv)
   ros::Subscriber AppTaskChoosedEventsSub = nh.subscribe("/agribot/chosen_task_name", 1, vAppTaskChoosedEventCallback);
   // Topic used to read the path name from task config file
   ros::Publisher StateMachineTaskPub = nh.advertise<std_msgs::String>("/agribot/state_machine/task", 1);
+  // The client of scan tags service
+  ros::ServiceClient rfid_tags_scanner_client =
+    nh.serviceClient<agribot_msgs::ToolManagerScan>("agribot/tool_management/scan");
+  agribot_msgs::ToolManagerScan rfid_tags_scanner_srv;
 
   if (bSimulation == true)
   {
@@ -243,6 +272,15 @@ int main(int argc, char** argv)
           }
         }
       }
+    }
+    // Tool manager RFID tools scanning
+    if (CommHandlerControl.bScanFrontTriggered())
+    {
+      callRfidScanSrv(rfid_tags_scanner_client, rfid_tags_scanner_srv, rfid_tags_scanner_srv.request.SCAN_FRONT);
+    }
+    if (CommHandlerControl.bScanBackTriggered())
+    {
+      callRfidScanSrv(rfid_tags_scanner_client, rfid_tags_scanner_srv, rfid_tags_scanner_srv.request.SCAN_BACK);
     }
     ros::spinOnce();
     loop_rate.sleep();

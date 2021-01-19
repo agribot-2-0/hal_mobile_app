@@ -5,8 +5,10 @@
 #pragma once
 
 #include <agribot_msgs/AgribotMobileAppFrame.h>
+#include <agribot_msgs/ToolManagerScan.h>
 #include <agribot_common/Can.h>
 #include <agribot_common/AgribotComponent.h>
+#include <vector>
 #include <queue>
 #include <cmath>
 #include <string>
@@ -63,6 +65,10 @@ class MobileAppHandler : public AgribotComponent
   uint8_t u8BackToolValveBlueFlow;
   uint8_t u8BackToolMotorSpeed;
 
+  // RFID tags scan
+  bool scan_front_ = false;
+  bool scan_back_ = false;
+
   // simulation part
   bool bFreshData;
   int iCommandId;
@@ -78,6 +84,8 @@ public:
   explicit MobileAppHandler(const char* pchCanChannel);
   ~MobileAppHandler();
   void vReceiveCanFrames();
+  bool bCheckByte(uint8_t frame_byte, uint8_t expected_data);
+  bool bRfidIsAntSelected(const can_frame& msg, uint8_t sel_ant);
   uint16_t u16ParseCanFrames();
   float fGetManualRadius();
   float fGetManualLinearVelo();
@@ -110,4 +118,15 @@ public:
 
   // check if new simulation frame has been received
   bool bDataPendingSimulation();
+
+  // tags scanning
+  bool bScanFrontTriggered();
+  bool bScanBackTriggered();
+
+  void setRfidFrameHeader(can_frame& msg,  // NOLINT(runtime/references)
+                          uint8_t frame_size, uint8_t com_val,
+                          uint8_t selected_antenna, uint8_t epc_words_cnt);
+
+  void vSendRfidTagsIds(const uint8_t sel_ant,
+                        const std::vector<std::vector<uint8_t>>& ids);   // NOLINT(runtime/references)
 };

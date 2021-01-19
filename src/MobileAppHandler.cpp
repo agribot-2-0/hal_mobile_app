@@ -14,7 +14,7 @@
 #define PROTOCOL_ERROR_FRAMES 0x0C8
 #define PROTOCOL_MAN_ERROR_FRAMES 0x0C9
 #define PROTOCOL_CONFIGURATION_FRAME 0x96
-constexpr uint8_t rfid_frame = 0x97;
+constexpr uint16_t rfid_frame = 0x1f4;
 #define PROTOCOL_ENG_ERROR_START_FRAME 0x104
 #define PROTOCOL_ENG_ERROR_FRAME 0x105
 
@@ -31,7 +31,7 @@ constexpr uint8_t com_byte = 0;
 constexpr uint8_t sel_ant_byte = 1;
 constexpr uint8_t epc_len_byte = 2;
 
-constexpr uint32_t frame_send_delay = 10000;
+constexpr uint32_t frame_send_delay = 20000;
 
 constexpr uint8_t scan_trigger_frame = 0x01;
 constexpr uint8_t detected_tags_start_frame = 0x02;
@@ -566,21 +566,35 @@ bool MobileAppHandler::bScanBackTriggered()
   return false;
 }
 
+void MobileAppHandler::setRfidFrameHeader(can_frame& msg,  // NOLINT(runtime/references)
+                                          uint8_t frame_size, uint8_t com_val,
+                                          uint8_t selected_antenna, uint8_t epc_words_cnt)
+{
+  msg.can_id = rfid_frame;
+  msg.can_dlc = frame_size;
+  msg.data[com_byte] = com_val;
+  msg.data[sel_ant_byte] = selected_antenna;
+  msg.data[epc_len_byte] = epc_words_cnt;  // number of EPC bytes
+}
+
 void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
                                         const std::vector<std::vector<uint8_t>>& ids)  // NOLINT(runtime/references)
 {
   std::size_t cnt = 0;
   uint8_t com = detected_tags_start_frame;
   can_frame message;
+  if (ids.size() == 0)
+  {
+    setRfidFrameHeader(message, tag_start_frame_size, com, sel_ant, ids.size());
+    usleep(frame_send_delay);
+    CanHandler.iSendFrame(&message, false);
+  }
   for (const auto& tag_id : ids)
   {
     cnt = 0;
     // Start frame with com = 2. It contains information about EPC length and selected antenna
     message.can_id = rfid_frame;
-    message.can_dlc = tag_start_frame_size;
-    message.data[com_byte] = com;
-    message.data[sel_ant_byte] = sel_ant;
-    message.data[epc_len_byte] = tag_id.size();  // number of EPC bytes
+    setRfidFrameHeader(message, tag_start_frame_size, com, sel_ant, tag_id.size());
     usleep(frame_send_delay);
     CanHandler.iSendFrame(&message, false);
     bzero(message.data, sizeof(uint8_t)*tag_data_frame_size);

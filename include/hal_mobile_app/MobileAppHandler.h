@@ -123,6 +123,10 @@ public:
   bool bScanFrontTriggered();
   bool bScanBackTriggered();
 
+  void setRfidFrameHeader(can_frame& msg,  // NOLINT(runtime/references)
+                          uint8_t frame_size, uint8_t com_val,
+                          uint8_t selected_antenna, uint8_t epc_words_cnt);
+
   void vSendRfidTagsIds(const uint8_t sel_ant,
                         const std::vector<std::vector<uint8_t>>& ids);   // NOLINT(runtime/references)
 };

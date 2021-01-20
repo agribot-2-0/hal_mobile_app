@@ -15,6 +15,7 @@
 #define PROTOCOL_MAN_ERROR_FRAMES 0x0C9
 #define PROTOCOL_CONFIGURATION_FRAME 0x96
 constexpr uint16_t rfid_frame = 0x1f4;
+constexpr uint16_t tpl_config_frame = 0x13D;
 #define PROTOCOL_ENG_ERROR_START_FRAME 0x104
 #define PROTOCOL_ENG_ERROR_FRAME 0x105
 
@@ -41,6 +42,8 @@ constexpr uint8_t tag_start_frame_size = 3;
 constexpr uint8_t tag_data_frame_size = 8;
 constexpr uint8_t data_frame_epc_payload = 7;
 
+//tpl control
+constexpr uint8_t config_id_byte = 0;
 
 #define CONFIG_TYPE_BYTE 0
 #define CONFIG_FRONT_TOOL_AL 1
@@ -248,6 +251,10 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
     {
       scan_front_ = bRfidIsAntSelected(message, front_ant_selected);
       scan_back_ = bRfidIsAntSelected(message, back_ant_selected);
+    }
+    else if ((tpl_config_frame  & ADDR_MASK) == (message.can_id & ADDR_MASK))
+    {
+      fillTplConfig(message);
     }
     else if ((PROTOCOL_CONFIGURATION_FRAME & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
@@ -621,5 +628,37 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
       usleep(frame_send_delay);
       CanHandler.iSendFrame(&message, false);
     }
+  }
+}
+
+//tpl control
+void MobileAppHandler::fillTplConfig(const can_frame& message)
+{
+  switch(message.data[config_id_byte])
+  {
+    case config_id_.front_pto:
+      break;
+    case config_id_.front_green:
+      break;
+    case config_id_.front_yellow:
+      break;
+    case config_id_.front_blue:
+      break;
+    case config_id_.front_tpl_angle:
+      break;
+    case config_id_.front_tpl_height:
+      break;
+    case config_id_.back_pto:
+      break;
+    case config_id_.back_green:
+      break;
+    case config_id_.back_yellow:
+      break;
+    case config_id_.back_blue:
+      break;
+    case config_id_.back_tpl_angle:
+      break;
+    case config_id_.back_tpl_height:
+      break;
   }
 }

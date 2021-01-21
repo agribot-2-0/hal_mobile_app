@@ -634,31 +634,44 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
 //tpl control
 void MobileAppHandler::fillTplConfig(const can_frame& message)
 {
-  switch(message.data[config_id_byte])
+  ConfigId id = static_cast<ConfigId>(message.data[config_id_byte]);
+  switch(id)
   {
-    case config_id_.front_pto:
+    case ConfigId::front_pto:
+      front_tpl_config_.setPtoFromFrame(message.data);
       break;
-    case config_id_.front_green:
+    case ConfigId::front_green:
+      front_tpl_config_.setValveFromFrame(message.data, ValveColor::green);
       break;
-    case config_id_.front_yellow:
+    case ConfigId::front_yellow:
+      front_tpl_config_.setValveFromFrame(message.data, ValveColor::blue);
       break;
-    case config_id_.front_blue:
+    case ConfigId::front_blue:
+      front_tpl_config_.setValveFromFrame(message.data, ValveColor::yellow);
       break;
-    case config_id_.front_tpl_angle:
+    case ConfigId::front_tpl_angle:
+      front_tpl_config_.setAngleFromFrame(message.data);
       break;
-    case config_id_.front_tpl_height:
+    case ConfigId::front_tpl_height:
+      front_tpl_config_.setHeightFromFrame(message.data);
       break;
-    case config_id_.back_pto:
+    case ConfigId::back_pto:
+      back_tpl_config_.setPtoFromFrame(message.data);
       break;
-    case config_id_.back_green:
+    case ConfigId::back_green:
+      back_tpl_config_.setValveFromFrame(message.data, ValveColor::green);
       break;
-    case config_id_.back_yellow:
+    case ConfigId::back_yellow:
+      back_tpl_config_.setValveFromFrame(message.data, ValveColor::yellow);
       break;
-    case config_id_.back_blue:
+    case ConfigId::back_blue:
+      back_tpl_config_.setValveFromFrame(message.data, ValveColor::blue);
       break;
-    case config_id_.back_tpl_angle:
+    case ConfigId::back_tpl_angle:
+      back_tpl_config_.setAngleFromFrame(message.data);
       break;
-    case config_id_.back_tpl_height:
+    case ConfigId::back_tpl_height:
+      back_tpl_config_.setHeightFromFrame(message.data);
       break;
   }
 }

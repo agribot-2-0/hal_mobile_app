@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <hal_mobile_app/TplConfig.h>
+
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/ToolManagerScan.h>
 #include <agribot_common/Can.h>
@@ -69,34 +71,8 @@ class MobileAppHandler : public AgribotComponent
   bool scan_front_ = false;
   bool scan_back_ = false;
 
-  const struct
-  {
-    uint8_t front_pto = 0x01;
-    uint8_t front_green = 0x02;
-    uint8_t front_yellow = 0x03;
-    uint8_t front_blue = 0x04;
-    uint8_t front_tpl_angle = 0x05;
-    uint8_t front_tpl_height = 0x06;
-    uint8_t back_pto = 0x07;
-    uint8_t back_green = 0x08;
-    uint8_t back_yellow = 0x09;
-    uint8_t back_blue = 0x0A;
-    uint8_t back_tpl_angle = 0x0B;
-    uint8_t back_tpl_height = 0x0C;
-  } config_id_;
-
-  //TPL config
-  struct tpl_config
-  {
-    double pto = 0.0;           // rpm
-    double green_valve = 0.0;   // valve open %
-    double yellow_valve = 0.0;  // valve open %
-    double blue_valve = 0.0;    // valve open %
-    double angle = 0.0;         // radians
-    double height = 0.0;        // meters
-  };
-  tpl_config front_tpl_config_;
-  tpl_config back_tpl_config_;
+  TplConfig front_tpl_config_;
+  TplConfig back_tpl_config_;
 
   // simulation part
   bool bFreshData;

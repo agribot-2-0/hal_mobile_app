@@ -29,20 +29,50 @@ enum class ValveColor
   yellow
 };
 
+enum class SelectedTpl
+{
+  front = 0,
+  back = 1
+};
+
 //TPL config
 class TplConfig
 {
  private:
-  double pto = 0.0;           // rpm
-  double green_valve = 0.0;   // valve open %
-  double yellow_valve = 0.0;  // valve open %
-  double blue_valve = 0.0;    // valve open %
-  double angle = 0.0;         // radians
-  double height = 0.0;        // meters
+  double pto_ = 0.0;           // rpm
+  double green_valve_ = 0.0;   // valve open %
+  double yellow_valve_ = 0.0;  // valve open %
+  double blue_valve_ = 0.0;    // valve open %
+  double angle_ = 0.0;         // radians
+  double height_ = 0.0;        // meters
+
+  const struct
+  {
+    uint8_t first = 1;
+    uint8_t zero = 2;
+  } byte_index_;
+
+  const struct
+  {
+    double pto_min = 0;
+    double pto_max = 1300;
+    double valve_flow_min = 0;
+    double valve_flow_max = 100;
+    double angle_min = -0.26;
+    double angle_max = 0.52;
+    double height_min = 0.0;
+    double height_max = 0.45;
+  } limit_;
+
+  const uint16_t sign_mask_ = 0x8000;
+  const int16_t divider_ = 1000;
+
+  uint16_t assembleU16FromFrame(uint8_t zero_byte, uint8_t first_byte);
+  int16_t getAngleSign(int16_t ang);
  public:
   TplConfig() {};
-  void setPtoFromFrame(const uint8_t* frame);
-  void setValveFromFrame(const uint8_t* frame, ValveColor sel_valve);
-  void setAngleFromFrame(const uint8_t* frame);
-  void setHeightFromFrame(const uint8_t* frame);
+  bool setPto(const uint8_t* frame);
+  bool setValveFlow(const uint8_t* frame, ValveColor sel_valve);
+  bool setAngle(const uint8_t* frame);
+  bool setHeight(const uint8_t* frame);
 };

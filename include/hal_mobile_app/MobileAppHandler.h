@@ -70,7 +70,10 @@ class MobileAppHandler : public AgribotComponent
   // RFID tags scan
   bool scan_front_ = false;
   bool scan_back_ = false;
-
+  
+  // TPL config
+  bool tpl_config_front_received_ = false;
+  bool tpl_config_back_received_ = false;
   TplConfig front_tpl_config_;
   TplConfig back_tpl_config_;
 
@@ -136,5 +139,8 @@ public:
                         const std::vector<std::vector<uint8_t>>& ids);   // NOLINT(runtime/references)
 
   //tpl control
-  void fillTplConfig(const can_frame& message);
+  bool tplFrontConfigReceived();
+  bool tplBackConfigReceived();
+  bool tplSetConfig(const can_frame& message);
+  TplConfig getConfig(SelectedTpl tpl);
 };

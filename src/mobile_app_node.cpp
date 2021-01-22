@@ -7,6 +7,7 @@
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/AgribotManualControl.h>
 #include <agribot_msgs/AgribotAppErrorFlag.h>
+#include <agribot_msgs/AgribotTool.h>
 #include <industrial_msgs/RobotMode.h>
 #include <geometry_msgs/Twist.h>
 #include <hal_mobile_app/MobileAppHandler.h>
@@ -69,6 +70,18 @@ void callRfidScanSrv(ros::ServiceClient client,
   }
 }
 
+agribot_msgs::AgribotTool tplConfigToToolMsg(const TplConfig& config)
+{
+  agribot_msgs::AgribotTool tool_msg;
+  tool_msg.tpl_angle = config.angle;
+  tool_msg.tpl_height = config.height;
+  tool_msg.red_valve_flow = config.red_valve_flow;
+  tool_msg.green_valve_flow = config.green_valve_flow;
+  tool_msg.blue_valve_flow = config.blue_valve_flow;
+  tool_msg.pto = config.pto;
+  return tool_msg;
+}
+
 int main(int argc, char** argv)
 {
   std::string name_tmp = "";
@@ -106,6 +119,11 @@ int main(int argc, char** argv)
   ros::ServiceClient rfid_tags_scanner_client =
     nh.serviceClient<agribot_msgs::ToolManagerScan>("agribot/tool_management/scan");
   agribot_msgs::ToolManagerScan rfid_tags_scanner_srv;
+  //Tpl config publishers
+  ros::Publisher front_tpl_config_publisher =
+                 nh.advertise<agribot_msgs::AgribotTool>("/agribot/control/tool/front/manual", 1);
+  ros::Publisher back_tpl_config_publisher =
+                 nh.advertise<agribot_msgs::AgribotTool>("/agribot/control/tool/back/manual", 1);
 
   if (bSimulation == true)
   {
@@ -281,6 +299,14 @@ int main(int argc, char** argv)
     if (CommHandlerControl.bScanBackTriggered())
     {
       callRfidScanSrv(rfid_tags_scanner_client, rfid_tags_scanner_srv, rfid_tags_scanner_srv.request.SCAN_BACK);
+    }
+    if (CommHandlerControl.tplFrontConfigReceived())
+    {
+      front_tpl_config_publisher.publish(tplConfigToToolMsg(CommHandlerControl.getConfig(SelectedTpl::front)));
+    }
+    if (CommHandlerControl.tplBackConfigReceived())
+    {
+      back_tpl_config_publisher.publish(tplConfigToToolMsg(CommHandlerControl.getConfig(SelectedTpl::back)));
     }
     ros::spinOnce();
     loop_rate.sleep();

@@ -254,7 +254,10 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
     }
     else if ((tpl_config_frame  & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
-      fillTplConfig(message);
+      if(!tplSetConfig(message))
+      {
+        //value error
+      }
     }
     else if ((PROTOCOL_CONFIGURATION_FRAME & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
@@ -631,47 +634,80 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
   }
 }
 
+bool MobileAppHandler::tplFrontConfigReceived()
+{
+  if (tpl_config_front_received_)
+  {
+    tpl_config_front_received_ = false;
+    return true;
+  }
+  return false;
+}
+
+bool MobileAppHandler::tplBackConfigReceived()
+{
+  if (tpl_config_back_received_)
+  {
+    tpl_config_back_received_ = false;
+    return true;
+  }
+  return false;
+}
+
 //tpl control
-void MobileAppHandler::fillTplConfig(const can_frame& message)
+bool MobileAppHandler::tplSetConfig(const can_frame& message)
 {
   ConfigId id = static_cast<ConfigId>(message.data[config_id_byte]);
+  bool ret = false;
   switch(id)
   {
     case ConfigId::front_pto:
-      front_tpl_config_.setPtoFromFrame(message.data);
+      ret = front_tpl_config_.setPto(message.data);
       break;
     case ConfigId::front_green:
-      front_tpl_config_.setValveFromFrame(message.data, ValveColor::green);
+      ret = front_tpl_config_.setValveFlow(message.data, ValveColor::green);
       break;
     case ConfigId::front_yellow:
-      front_tpl_config_.setValveFromFrame(message.data, ValveColor::blue);
+      ret = front_tpl_config_.setValveFlow(message.data, ValveColor::blue);
       break;
     case ConfigId::front_blue:
-      front_tpl_config_.setValveFromFrame(message.data, ValveColor::yellow);
+      ret = front_tpl_config_.setValveFlow(message.data, ValveColor::yellow);
       break;
     case ConfigId::front_tpl_angle:
-      front_tpl_config_.setAngleFromFrame(message.data);
+      ret = front_tpl_config_.setAngle(message.data);
       break;
     case ConfigId::front_tpl_height:
-      front_tpl_config_.setHeightFromFrame(message.data);
+      ret = front_tpl_config_.setHeight(message.data);
       break;
     case ConfigId::back_pto:
-      back_tpl_config_.setPtoFromFrame(message.data);
+      ret = back_tpl_config_.setPto(message.data);
       break;
     case ConfigId::back_green:
-      back_tpl_config_.setValveFromFrame(message.data, ValveColor::green);
+      ret = back_tpl_config_.setValveFlow(message.data, ValveColor::green);
       break;
     case ConfigId::back_yellow:
-      back_tpl_config_.setValveFromFrame(message.data, ValveColor::yellow);
+      ret = back_tpl_config_.setValveFlow(message.data, ValveColor::yellow);
       break;
     case ConfigId::back_blue:
-      back_tpl_config_.setValveFromFrame(message.data, ValveColor::blue);
+      ret = back_tpl_config_.setValveFlow(message.data, ValveColor::blue);
       break;
     case ConfigId::back_tpl_angle:
-      back_tpl_config_.setAngleFromFrame(message.data);
+      ret = back_tpl_config_.setAngle(message.data);
       break;
     case ConfigId::back_tpl_height:
-      back_tpl_config_.setHeightFromFrame(message.data);
+      ret = back_tpl_config_.setHeight(message.data);
       break;
+  }
+  return ret;
+}
+
+TplConfig MobileAppHandler::getConfig(SelectedTpl tpl)
+{
+  switch(tpl)
+  {
+    case SelectedTpl::front:
+      return front_tpl_config_;
+    case SelectedTpl::back:
+      return back_tpl_config_;
   }
 }

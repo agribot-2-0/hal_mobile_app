@@ -70,15 +70,15 @@ void callRfidScanSrv(ros::ServiceClient client,
   }
 }
 
-agribot_msgs::AgribotTool tplConfigToToolMsg(const TplConfig& config)
+agribot_msgs::AgribotTool tplConfigToToolMsg(tool_manager::TplConfig config)
 {
   agribot_msgs::AgribotTool tool_msg;
-  tool_msg.tpl_angle = config.angle;
-  tool_msg.tpl_height = config.height;
+  tool_msg.tpl_angle = config.tpl_angle;
+  tool_msg.tpl_height = config.tpl_height;
+  tool_msg.yellow_valve_flow = config.yellow_valve_flow;
   tool_msg.red_valve_flow = config.red_valve_flow;
-  tool_msg.green_valve_flow = config.green_valve_flow;
   tool_msg.blue_valve_flow = config.blue_valve_flow;
-  tool_msg.pto = config.pto;
+  tool_msg.pto_rpm = config.pto_rpm;
   return tool_msg;
 }
 

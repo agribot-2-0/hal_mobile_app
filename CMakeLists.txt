@@ -53,7 +53,7 @@ include_directories(
 )
 
 link_directories("${PROJECT_SOURCE_DIR}")
-add_executable(mobile_app_node src/mobile_app_node.cpp src/MobileAppHandler.cpp src/TplConfig.cpp)
+add_executable(mobile_app_node src/mobile_app_node.cpp src/MobileAppHandler.cpp src/TplConfigHandle.cpp)
 target_link_libraries(mobile_app_node ${catkin_LIBRARIES})
 add_dependencies(mobile_app_node ${catkin_EXPORTED_TARGETS})
 

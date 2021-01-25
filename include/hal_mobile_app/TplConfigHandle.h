@@ -5,17 +5,18 @@
 #pragma once
 
 #include <cstdint>
+#include <agribot_common/TplConfig.h>
 
 enum class ConfigId
 {
   front_pto = 0x01,
-  front_green = 0x02,
+  front_red = 0x02,
   front_yellow = 0x03,
   front_blue = 0x04,
   front_tpl_angle = 0x05,
   front_tpl_height = 0x06,
   back_pto = 0x07,
-  back_green = 0x08,
+  back_red = 0x08,
   back_yellow = 0x09,
   back_blue = 0x0A,
   back_tpl_angle = 0x0B,
@@ -24,7 +25,7 @@ enum class ConfigId
 
 enum class ValveColor
 {
-  green,
+  red,
   blue,
   yellow
 };
@@ -36,15 +37,10 @@ enum class SelectedTpl
 };
 
 //TPL config
-class TplConfig
+class TplConfigHandle
 {
  private:
-  double pto_ = 0.0;           // rpm
-  double green_valve_ = 0.0;   // valve open %
-  double yellow_valve_ = 0.0;  // valve open %
-  double blue_valve_ = 0.0;    // valve open %
-  double angle_ = 0.0;         // radians
-  double height_ = 0.0;        // meters
+  tool_manager::TplConfig config_;
 
   const struct
   {
@@ -70,9 +66,10 @@ class TplConfig
   uint16_t assembleU16FromFrame(uint8_t zero_byte, uint8_t first_byte);
   int16_t getAngleSign(int16_t ang);
  public:
-  TplConfig() {};
+  TplConfigHandle() {};
   bool setPto(const uint8_t* frame);
   bool setValveFlow(const uint8_t* frame, ValveColor sel_valve);
   bool setAngle(const uint8_t* frame);
   bool setHeight(const uint8_t* frame);
+  tool_manager::TplConfig getConfig();
 };

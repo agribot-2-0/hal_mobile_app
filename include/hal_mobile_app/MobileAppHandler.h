@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <hal_mobile_app/TplConfig.h>
+#include <hal_mobile_app/TplConfigHandle.h>
 
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/ToolManagerScan.h>
@@ -56,26 +56,26 @@ class MobileAppHandler : public AgribotComponent
   uint uFrontToolAngle;
   uint uFrontToolLength;
   uint8_t u8FrontToolValveRedFlow;
-  uint8_t u8FrontToolValveGreenFlow;
+  uint8_t u8FrontToolValveYellowFlow;
   uint8_t u8FrontToolValveBlueFlow;
   uint8_t u8FrontToolMotorSpeed;
   uint uBackRFID;
   uint uBackToolAngle;
   uint uBackToolLength;
   uint8_t u8BackToolValveRedFlow;
-  uint8_t u8BackToolValveGreenFlow;
+  uint8_t u8BackToolValveYellowFlow;
   uint8_t u8BackToolValveBlueFlow;
   uint8_t u8BackToolMotorSpeed;
 
   // RFID tags scan
   bool scan_front_ = false;
   bool scan_back_ = false;
-  
+
   // TPL config
   bool tpl_config_front_received_ = false;
   bool tpl_config_back_received_ = false;
-  TplConfig front_tpl_config_;
-  TplConfig back_tpl_config_;
+  TplConfigHandle front_tpl_config_;
+  TplConfigHandle back_tpl_config_;
 
   // simulation part
   bool bFreshData;
@@ -142,5 +142,5 @@ public:
   bool tplFrontConfigReceived();
   bool tplBackConfigReceived();
   bool tplSetConfig(const can_frame& message);
-  TplConfig getConfig(SelectedTpl tpl);
+  tool_manager::TplConfig getConfig(SelectedTpl tpl);
 };

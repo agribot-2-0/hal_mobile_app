@@ -138,7 +138,7 @@ public:
   void vSendRfidTagsIds(const uint8_t sel_ant,
                         const std::vector<std::vector<uint8_t>>& ids);   // NOLINT(runtime/references)
 
-  //tpl control
+  // tpl control
   bool tplFrontConfigReceived();
   bool tplBackConfigReceived();
   bool tplSetConfig(const can_frame& message);

@@ -119,7 +119,7 @@ int main(int argc, char** argv)
   ros::ServiceClient rfid_tags_scanner_client =
     nh.serviceClient<agribot_msgs::ToolManagerScan>("agribot/tool_management/scan");
   agribot_msgs::ToolManagerScan rfid_tags_scanner_srv;
-  //Tpl config publishers
+  // Tpl config publishers
   ros::Publisher front_tpl_config_publisher =
                  nh.advertise<agribot_msgs::AgribotTool>("/agribot/control/tool/front/manual", 1);
   ros::Publisher back_tpl_config_publisher =

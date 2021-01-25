@@ -42,7 +42,7 @@ constexpr uint8_t tag_start_frame_size = 3;
 constexpr uint8_t tag_data_frame_size = 8;
 constexpr uint8_t data_frame_epc_payload = 7;
 
-//tpl control
+// tpl control
 constexpr uint8_t config_id_byte = 0;
 
 #define CONFIG_TYPE_BYTE 0
@@ -254,9 +254,9 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
     }
     else if ((tpl_config_frame  & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
-      if(!tplSetConfig(message))
+      if (!tplSetConfig(message))
       {
-        //value error
+        // value error error frame
       }
     }
     else if ((PROTOCOL_CONFIGURATION_FRAME & ADDR_MASK) == (message.can_id & ADDR_MASK))
@@ -654,12 +654,12 @@ bool MobileAppHandler::tplBackConfigReceived()
   return false;
 }
 
-//tpl control
+// tpl control
 bool MobileAppHandler::tplSetConfig(const can_frame& message)
 {
   ConfigId id = static_cast<ConfigId>(message.data[config_id_byte]);
   bool ret = false;
-  switch(id)
+  switch (id)
   {
     case ConfigId::front_pto:
       ret = front_tpl_config_.setPto(message.data);
@@ -703,7 +703,7 @@ bool MobileAppHandler::tplSetConfig(const can_frame& message)
 
 tool_manager::TplConfig MobileAppHandler::getConfig(SelectedTpl tpl)
 {
-  switch(tpl)
+  switch (tpl)
   {
     case SelectedTpl::front:
       return front_tpl_config_.getConfig();

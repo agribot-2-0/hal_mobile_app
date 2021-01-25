@@ -32,7 +32,7 @@ bool TplConfigHandle::setValveFlow(const uint8_t* frame, ValveColor sel_valve)
   {
     return false;
   }
-  switch(sel_valve)
+  switch (sel_valve)
   {
     case ValveColor::red:
       config_.red_valve_flow = valve_flow;

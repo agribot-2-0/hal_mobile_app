@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <cstdint>
 #include <agribot_common/TplConfig.h>
+#include <cstdint>
 
 enum class ConfigId
 {
@@ -36,7 +36,7 @@ enum class SelectedTpl
   back = 1
 };
 
-//TPL config
+// TPL config
 class TplConfigHandle
 {
  private:
@@ -66,7 +66,7 @@ class TplConfigHandle
   uint16_t assembleU16FromFrame(uint8_t zero_byte, uint8_t first_byte);
   int16_t getAngleSign(int16_t ang);
  public:
-  TplConfigHandle() {};
+  TplConfigHandle() {}
   bool setPto(const uint8_t* frame);
   bool setValveFlow(const uint8_t* frame, ValveColor sel_valve);
   bool setAngle(const uint8_t* frame);

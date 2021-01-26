@@ -74,6 +74,11 @@ class MobileAppHandler : public AgribotComponent
   // TPL config
   TplConfigHandle front_tpl_config_;
   TplConfigHandle back_tpl_config_;
+  const struct
+  {
+    uint8_t success = 0x00;
+    uint8_t failed = 0xFF;
+  } tpl_return_code_;
 
   // simulation part
   bool bFreshData;
@@ -139,4 +144,5 @@ public:
   // tpl control
   bool tplSetConfig(const can_frame& message);
   tool_manager::TplConfig getTplConfig(SelectedTpl tpl);
+  void sendTplResponseFrame(uint8_t ret_code, uint8_t id);
 };

@@ -16,6 +16,7 @@
 #define PROTOCOL_CONFIGURATION_FRAME 0x96
 constexpr uint16_t rfid_frame = 0x1f4;
 constexpr uint16_t tpl_config_frame = 0x13D;
+constexpr uint16_t tpl_response = 0x13E;
 #define PROTOCOL_ENG_ERROR_START_FRAME 0x104
 #define PROTOCOL_ENG_ERROR_FRAME 0x105
 
@@ -44,6 +45,8 @@ constexpr uint8_t data_frame_epc_payload = 7;
 
 // tpl control
 constexpr uint8_t config_id_byte = 0;
+constexpr uint8_t ret_code_byte = 1;
+constexpr uint8_t tpl_resp_frame_len = 2;
 
 #define CONFIG_TYPE_BYTE 0
 #define CONFIG_FRONT_TOOL_AL 1
@@ -256,7 +259,11 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
     {
       if (!tplSetConfig(message))
       {
-        // value error error frame
+        sendTplResponseFrame(tpl_return_code_.failed, message.data[config_id_byte]);
+      }
+      else
+      {
+        sendTplResponseFrame(tpl_return_code_.success, message.data[config_id_byte]);
       }
     }
     else if ((PROTOCOL_CONFIGURATION_FRAME & ADDR_MASK) == (message.can_id & ADDR_MASK))
@@ -690,4 +697,14 @@ tool_manager::TplConfig MobileAppHandler::getTplConfig(SelectedTpl tpl)
     case SelectedTpl::back:
       return back_tpl_config_.getConfig();
   }
+}
+
+void MobileAppHandler::sendTplResponseFrame(uint8_t ret_code, uint8_t id)
+{
+  can_frame message;
+  message.can_id = tpl_response;
+  message.can_dlc = tpl_resp_frame_len;
+  message.data[config_id_byte] = id;
+  message.data[ret_code_byte] = static_cast<uint8_t>(ret_code);
+  CanHandler.iSendFrame(&message, false);
 }

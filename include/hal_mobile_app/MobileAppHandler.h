@@ -72,8 +72,6 @@ class MobileAppHandler : public AgribotComponent
   bool scan_back_ = false;
 
   // TPL config
-  bool tpl_config_front_received_ = false;
-  bool tpl_config_back_received_ = false;
   TplConfigHandle front_tpl_config_;
   TplConfigHandle back_tpl_config_;
 
@@ -139,8 +137,6 @@ public:
                         const std::vector<std::vector<uint8_t>>& ids);   // NOLINT(runtime/references)
 
   // tpl control
-  bool tplFrontConfigReceived();
-  bool tplBackConfigReceived();
   bool tplSetConfig(const can_frame& message);
   tool_manager::TplConfig getTplConfig(SelectedTpl tpl);
 };

@@ -634,26 +634,6 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
   }
 }
 
-bool MobileAppHandler::tplFrontConfigReceived()
-{
-  if (tpl_config_front_received_)
-  {
-    tpl_config_front_received_ = false;
-    return true;
-  }
-  return false;
-}
-
-bool MobileAppHandler::tplBackConfigReceived()
-{
-  if (tpl_config_back_received_)
-  {
-    tpl_config_back_received_ = false;
-    return true;
-  }
-  return false;
-}
-
 // tpl control
 bool MobileAppHandler::tplSetConfig(const can_frame& message)
 {

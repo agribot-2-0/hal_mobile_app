@@ -3,6 +3,7 @@
  */
 
 #include <hal_mobile_app/TplConfigHandle.h>
+#include <iostream>
 
 uint16_t TplConfigHandle::assembleU16FromFrame(uint8_t first_byte, uint8_t zero_byte)
 {
@@ -11,12 +12,12 @@ uint16_t TplConfigHandle::assembleU16FromFrame(uint8_t first_byte, uint8_t zero_
 
 int16_t TplConfigHandle::getAngleSign(int16_t ang)
 {
-  return (ang & sign_mask_ == sign_mask_ ? -1 : 1);
+  return ((ang & sign_mask_) == sign_mask_ ? -1 : 1);
 }
 
 bool TplConfigHandle::setPto(const uint8_t* frame)
 {
-  uint16_t pto = assembleU16FromFrame(byte_index_.first, byte_index_.zero);
+  uint16_t pto = assembleU16FromFrame(frame[byte_index_.first], frame[byte_index_.zero]);
   if (pto < limit_.pto_min || pto > limit_.pto_max)
   {
     return false;
@@ -27,7 +28,7 @@ bool TplConfigHandle::setPto(const uint8_t* frame)
 
 bool TplConfigHandle::setValveFlow(const uint8_t* frame, ValveColor sel_valve)
 {
-  uint16_t valve_flow = assembleU16FromFrame(byte_index_.first, byte_index_.zero);
+  uint16_t valve_flow = assembleU16FromFrame(frame[byte_index_.first], frame[byte_index_.zero]);
   if (valve_flow < limit_.valve_flow_min || valve_flow > limit_.valve_flow_max)
   {
     return false;
@@ -50,10 +51,10 @@ bool TplConfigHandle::setValveFlow(const uint8_t* frame, ValveColor sel_valve)
 bool TplConfigHandle::setAngle(const uint8_t* frame)
 {
   double angle = 0.0;
-  int16_t angle_tmp = assembleU16FromFrame(byte_index_.first, byte_index_.zero);
-  angle_tmp = angle_tmp * getAngleSign(angle_tmp);
-  angle_tmp = (~sign_mask_) & angle_tmp;
-  angle = angle_tmp/divider_;
+  int16_t angle_tmp = assembleU16FromFrame(frame[byte_index_.first], frame[byte_index_.zero]);
+  int16_t sign = getAngleSign(angle_tmp);
+  angle_tmp = ((~sign_mask_) & angle_tmp) * sign;
+  angle = ((double)angle_tmp)/divider_;
   if (angle < limit_.angle_min || angle > limit_.angle_max)
   {
     return false;
@@ -64,8 +65,8 @@ bool TplConfigHandle::setAngle(const uint8_t* frame)
 
 bool TplConfigHandle::setHeight(const uint8_t* frame)
 {
-  double height = assembleU16FromFrame(byte_index_.first, byte_index_.zero)/divider_;
-  if (height >= limit_.height_min || height <= limit_.height_max)
+  double height = ((double)assembleU16FromFrame(frame[byte_index_.first], frame[byte_index_.zero]))/divider_;
+  if (height < limit_.height_min || height > limit_.height_max)
   {
     return false;
   }

@@ -54,8 +54,8 @@ class TplConfigHandle
     double pto_max = 1300;
     double valve_flow_min = 0;
     double valve_flow_max = 100;
-    double angle_min = -0.26;
-    double angle_max = 0.52;
+    double angle_min = -0.26;  // -15 deg
+    double angle_max = 0.52;   // 30 deg
     double height_min = 0.0;
     double height_max = 0.45;
   } limit_;

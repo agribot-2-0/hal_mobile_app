@@ -300,14 +300,8 @@ int main(int argc, char** argv)
     {
       callRfidScanSrv(rfid_tags_scanner_client, rfid_tags_scanner_srv, rfid_tags_scanner_srv.request.SCAN_BACK);
     }
-    if (CommHandlerControl.tplFrontConfigReceived())
-    {
-      front_tpl_config_publisher.publish(tplConfigToToolMsg(CommHandlerControl.getConfig(SelectedTpl::front)));
-    }
-    if (CommHandlerControl.tplBackConfigReceived())
-    {
-      back_tpl_config_publisher.publish(tplConfigToToolMsg(CommHandlerControl.getConfig(SelectedTpl::back)));
-    }
+    front_tpl_config_publisher.publish(tplConfigToToolMsg(CommHandlerControl.getTplConfig(SelectedTpl::front)));
+    back_tpl_config_publisher.publish(tplConfigToToolMsg(CommHandlerControl.getTplConfig(SelectedTpl::back)));
     ros::spinOnce();
     loop_rate.sleep();
   }

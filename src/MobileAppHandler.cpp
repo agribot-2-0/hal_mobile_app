@@ -701,7 +701,7 @@ bool MobileAppHandler::tplSetConfig(const can_frame& message)
   return ret;
 }
 
-tool_manager::TplConfig MobileAppHandler::getConfig(SelectedTpl tpl)
+tool_manager::TplConfig MobileAppHandler::getTplConfig(SelectedTpl tpl)
 {
   switch (tpl)
   {

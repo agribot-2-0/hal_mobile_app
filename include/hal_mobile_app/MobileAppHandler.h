@@ -142,5 +142,5 @@ public:
   bool tplFrontConfigReceived();
   bool tplBackConfigReceived();
   bool tplSetConfig(const can_frame& message);
-  tool_manager::TplConfig getConfig(SelectedTpl tpl);
+  tool_manager::TplConfig getTplConfig(SelectedTpl tpl);
 };

@@ -54,7 +54,7 @@ bool TplConfigHandle::setAngle(const uint8_t* frame)
   int16_t angle_tmp = assembleU16FromFrame(frame[byte_index_.first], frame[byte_index_.zero]);
   int16_t sign = getAngleSign(angle_tmp);
   angle_tmp = ((~sign_mask_) & angle_tmp) * sign;
-  angle = ((double)angle_tmp)/divider_;
+  angle = static_cast<double>(angle_tmp)/divider_;
   if (angle < limit_.angle_min || angle > limit_.angle_max)
   {
     return false;
@@ -65,7 +65,7 @@ bool TplConfigHandle::setAngle(const uint8_t* frame)
 
 bool TplConfigHandle::setHeight(const uint8_t* frame)
 {
-  double height = ((double)assembleU16FromFrame(frame[byte_index_.first], frame[byte_index_.zero]))/divider_;
+  double height = static_cast<double>(assembleU16FromFrame(frame[byte_index_.first], frame[byte_index_.zero]))/divider_;
   if (height < limit_.height_min || height > limit_.height_max)
   {
     return false;

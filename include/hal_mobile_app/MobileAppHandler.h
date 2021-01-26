@@ -5,7 +5,6 @@
 #pragma once
 
 #include <hal_mobile_app/TplConfigHandle.h>
-
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/ToolManagerScan.h>
 #include <agribot_common/Can.h>

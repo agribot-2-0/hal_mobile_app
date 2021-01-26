@@ -66,7 +66,7 @@ constexpr uint8_t config_id_byte = 0;
 #define CONFIG_TOOL_LENGTH_BYTE 3
 
 #define CONFIG_TOOL_VALVE_R_BYTE 1
-#define CONFIG_TOOL_VALVE_G_BYTE 2
+#define CONFIG_TOOL_VALVE_Y_BYTE 2
 #define CONFIG_TOOL_VALVE_B_BYTE 3
 #define CONFIG_TOOL_MOTOR_BYTE 4
 
@@ -270,7 +270,7 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
       else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_FRONT_TOOL_VM)
       {
         u8FrontToolValveRedFlow = message.data[CONFIG_TOOL_VALVE_R_BYTE];
-        u8FrontToolValveYellowFlow = message.data[CONFIG_TOOL_VALVE_G_BYTE];
+        u8FrontToolValveYellowFlow = message.data[CONFIG_TOOL_VALVE_Y_BYTE];
         u8FrontToolValveBlueFlow = message.data[CONFIG_TOOL_VALVE_B_BYTE];
         u8FrontToolMotorSpeed = message.data[CONFIG_TOOL_MOTOR_BYTE];
         u8ReceivedConfigParts |= CONFIG_FRONT_TOOL_VM_MASK_PART;
@@ -284,7 +284,7 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
       else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_BACK_TOOL_VM)
       {
         u8BackToolValveRedFlow = message.data[CONFIG_TOOL_VALVE_R_BYTE];
-        u8BackToolValveYellowFlow = message.data[CONFIG_TOOL_VALVE_G_BYTE];
+        u8BackToolValveYellowFlow = message.data[CONFIG_TOOL_VALVE_Y_BYTE];
         u8BackToolValveBlueFlow = message.data[CONFIG_TOOL_VALVE_B_BYTE];
         u8BackToolMotorSpeed = message.data[CONFIG_TOOL_MOTOR_BYTE];
         u8ReceivedConfigParts |= CONFIG_BACK_TOOL_VM_MASK_PART;
@@ -382,7 +382,7 @@ void MobileAppHandler::vAssemblyStateMachineFrame(uint* uCanID, uint8_t* u8MsgBy
         *uCanID = PROTOCOL_CONFIGURATION_FRAME;
         u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_FRONT_TOOL_VM;
         u8MsgBytes[CONFIG_TOOL_VALVE_R_BYTE] = u8FrontToolValveRedFlow;
-        u8MsgBytes[CONFIG_TOOL_VALVE_G_BYTE] = u8FrontToolValveYellowFlow;
+        u8MsgBytes[CONFIG_TOOL_VALVE_Y_BYTE] = u8FrontToolValveYellowFlow;
         u8MsgBytes[CONFIG_TOOL_VALVE_B_BYTE] = u8FrontToolValveBlueFlow;
         u8MsgBytes[CONFIG_TOOL_MOTOR_BYTE] = u8FrontToolMotorSpeed;
 
@@ -404,7 +404,7 @@ void MobileAppHandler::vAssemblyStateMachineFrame(uint* uCanID, uint8_t* u8MsgBy
         *uCanID = PROTOCOL_CONFIGURATION_FRAME;
         u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_BACK_TOOL_VM;
         u8MsgBytes[CONFIG_TOOL_VALVE_R_BYTE] = u8BackToolValveRedFlow;
-        u8MsgBytes[CONFIG_TOOL_VALVE_G_BYTE] = u8BackToolValveYellowFlow;
+        u8MsgBytes[CONFIG_TOOL_VALVE_Y_BYTE] = u8BackToolValveYellowFlow;
         u8MsgBytes[CONFIG_TOOL_VALVE_B_BYTE] = u8BackToolValveBlueFlow;
         u8MsgBytes[CONFIG_TOOL_MOTOR_BYTE] = u8BackToolMotorSpeed;
 

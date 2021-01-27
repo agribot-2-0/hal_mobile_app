@@ -44,8 +44,11 @@ constexpr uint8_t tag_data_frame_size = 8;
 constexpr uint8_t data_frame_epc_payload = 7;
 
 // tpl control
-constexpr uint8_t config_id_byte = 0;
-constexpr uint8_t ret_code_byte = 1;
+enum TplFrameBytes
+{
+  config_id = 0,
+  ret_code = 1
+};
 constexpr uint8_t tpl_resp_frame_len = 2;
 
 #define CONFIG_TYPE_BYTE 0
@@ -69,7 +72,7 @@ constexpr uint8_t tpl_resp_frame_len = 2;
 #define CONFIG_TOOL_LENGTH_BYTE 3
 
 #define CONFIG_TOOL_VALVE_R_BYTE 1
-#define CONFIG_TOOL_VALVE_Y_BYTE 2
+#define CONFIG_TOOL_VALVE_G_BYTE 2
 #define CONFIG_TOOL_VALVE_B_BYTE 3
 #define CONFIG_TOOL_MOTOR_BYTE 4
 
@@ -118,13 +121,13 @@ MobileAppHandler::MobileAppHandler(const char* pchCanChannel)
   uFrontToolAngle = 0;
   uFrontToolLength = 0;
   u8FrontToolValveRedFlow = 0;
-  u8FrontToolValveYellowFlow = 0;
+  u8FrontToolValveGreenFlow = 0;
   u8FrontToolValveBlueFlow = 0;
   u8FrontToolMotorSpeed = 0;
   uBackToolAngle = 0;
   uBackToolLength = 0;
   u8BackToolValveRedFlow = 0;
-  u8BackToolValveYellowFlow = 0;
+  u8BackToolValveGreenFlow = 0;
   u8BackToolValveBlueFlow = 0;
   u8BackToolMotorSpeed = 0;
   CodesTotal = 0;
@@ -257,13 +260,13 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
     }
     else if ((tpl_config_frame  & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
-      if (!tplSetConfig(message))
+      if (!setTplConfig(message))
       {
-        sendTplResponseFrame(tpl_return_code_.failed, message.data[config_id_byte]);
+        sendTplResponseFrame(TplReturnCode::failed, message.data[TplFrameBytes::config_id]);
       }
       else
       {
-        sendTplResponseFrame(tpl_return_code_.success, message.data[config_id_byte]);
+        sendTplResponseFrame(TplReturnCode::success, message.data[TplFrameBytes::config_id]);
       }
     }
     else if ((PROTOCOL_CONFIGURATION_FRAME & ADDR_MASK) == (message.can_id & ADDR_MASK))
@@ -277,7 +280,7 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
       else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_FRONT_TOOL_VM)
       {
         u8FrontToolValveRedFlow = message.data[CONFIG_TOOL_VALVE_R_BYTE];
-        u8FrontToolValveYellowFlow = message.data[CONFIG_TOOL_VALVE_Y_BYTE];
+        u8FrontToolValveGreenFlow = message.data[CONFIG_TOOL_VALVE_G_BYTE];
         u8FrontToolValveBlueFlow = message.data[CONFIG_TOOL_VALVE_B_BYTE];
         u8FrontToolMotorSpeed = message.data[CONFIG_TOOL_MOTOR_BYTE];
         u8ReceivedConfigParts |= CONFIG_FRONT_TOOL_VM_MASK_PART;
@@ -291,7 +294,7 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
       else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_BACK_TOOL_VM)
       {
         u8BackToolValveRedFlow = message.data[CONFIG_TOOL_VALVE_R_BYTE];
-        u8BackToolValveYellowFlow = message.data[CONFIG_TOOL_VALVE_Y_BYTE];
+        u8BackToolValveGreenFlow = message.data[CONFIG_TOOL_VALVE_G_BYTE];
         u8BackToolValveBlueFlow = message.data[CONFIG_TOOL_VALVE_B_BYTE];
         u8BackToolMotorSpeed = message.data[CONFIG_TOOL_MOTOR_BYTE];
         u8ReceivedConfigParts |= CONFIG_BACK_TOOL_VM_MASK_PART;
@@ -389,7 +392,7 @@ void MobileAppHandler::vAssemblyStateMachineFrame(uint* uCanID, uint8_t* u8MsgBy
         *uCanID = PROTOCOL_CONFIGURATION_FRAME;
         u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_FRONT_TOOL_VM;
         u8MsgBytes[CONFIG_TOOL_VALVE_R_BYTE] = u8FrontToolValveRedFlow;
-        u8MsgBytes[CONFIG_TOOL_VALVE_Y_BYTE] = u8FrontToolValveYellowFlow;
+        u8MsgBytes[CONFIG_TOOL_VALVE_G_BYTE] = u8FrontToolValveGreenFlow;
         u8MsgBytes[CONFIG_TOOL_VALVE_B_BYTE] = u8FrontToolValveBlueFlow;
         u8MsgBytes[CONFIG_TOOL_MOTOR_BYTE] = u8FrontToolMotorSpeed;
 
@@ -411,7 +414,7 @@ void MobileAppHandler::vAssemblyStateMachineFrame(uint* uCanID, uint8_t* u8MsgBy
         *uCanID = PROTOCOL_CONFIGURATION_FRAME;
         u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_BACK_TOOL_VM;
         u8MsgBytes[CONFIG_TOOL_VALVE_R_BYTE] = u8BackToolValveRedFlow;
-        u8MsgBytes[CONFIG_TOOL_VALVE_Y_BYTE] = u8BackToolValveYellowFlow;
+        u8MsgBytes[CONFIG_TOOL_VALVE_G_BYTE] = u8BackToolValveGreenFlow;
         u8MsgBytes[CONFIG_TOOL_VALVE_B_BYTE] = u8BackToolValveBlueFlow;
         u8MsgBytes[CONFIG_TOOL_MOTOR_BYTE] = u8BackToolMotorSpeed;
 
@@ -642,46 +645,46 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
 }
 
 // tpl control
-bool MobileAppHandler::tplSetConfig(const can_frame& message)
+bool MobileAppHandler::setTplConfig(const can_frame& message)
 {
-  ConfigId id = static_cast<ConfigId>(message.data[config_id_byte]);
+  TplConfigId id = static_cast<TplConfigId>(message.data[TplFrameBytes::config_id]);
   bool ret = false;
   switch (id)
   {
-    case ConfigId::front_pto:
+    case TplConfigId::front_pto:
       ret = front_tpl_config_.setPto(message.data);
       break;
-    case ConfigId::front_yellow:
-      ret = front_tpl_config_.setValveFlow(message.data, ValveColor::yellow);
+    case TplConfigId::front_green:
+      ret = front_tpl_config_.setValveFlow(message.data, ValveColor::green);
       break;
-    case ConfigId::front_blue:
+    case TplConfigId::front_blue:
       ret = front_tpl_config_.setValveFlow(message.data, ValveColor::blue);
       break;
-    case ConfigId::front_red:
+    case TplConfigId::front_red:
       ret = front_tpl_config_.setValveFlow(message.data, ValveColor::red);
       break;
-    case ConfigId::front_tpl_angle:
+    case TplConfigId::front_tpl_angle:
       ret = front_tpl_config_.setAngle(message.data);
       break;
-    case ConfigId::front_tpl_height:
+    case TplConfigId::front_tpl_height:
       ret = front_tpl_config_.setHeight(message.data);
       break;
-    case ConfigId::back_pto:
+    case TplConfigId::back_pto:
       ret = back_tpl_config_.setPto(message.data);
       break;
-    case ConfigId::back_yellow:
-      ret = back_tpl_config_.setValveFlow(message.data, ValveColor::yellow);
+    case TplConfigId::back_green:
+      ret = back_tpl_config_.setValveFlow(message.data, ValveColor::green);
       break;
-    case ConfigId::back_blue:
+    case TplConfigId::back_blue:
       ret = back_tpl_config_.setValveFlow(message.data, ValveColor::blue);
       break;
-    case ConfigId::back_red:
+    case TplConfigId::back_red:
       ret = back_tpl_config_.setValveFlow(message.data, ValveColor::red);
       break;
-    case ConfigId::back_tpl_angle:
+    case TplConfigId::back_tpl_angle:
       ret = back_tpl_config_.setAngle(message.data);
       break;
-    case ConfigId::back_tpl_height:
+    case TplConfigId::back_tpl_height:
       ret = back_tpl_config_.setHeight(message.data);
       break;
   }
@@ -699,12 +702,12 @@ tool_manager::TplConfig MobileAppHandler::getTplConfig(SelectedTpl tpl)
   }
 }
 
-void MobileAppHandler::sendTplResponseFrame(uint8_t ret_code, uint8_t id)
+void MobileAppHandler::sendTplResponseFrame(uint8_t ret, uint8_t id)
 {
   can_frame message;
   message.can_id = tpl_response;
   message.can_dlc = tpl_resp_frame_len;
-  message.data[config_id_byte] = id;
-  message.data[ret_code_byte] = static_cast<uint8_t>(ret_code);
+  message.data[TplFrameBytes::config_id] = id;
+  message.data[TplFrameBytes::ret_code] = static_cast<uint8_t>(ret);
   CanHandler.iSendFrame(&message, false);
 }

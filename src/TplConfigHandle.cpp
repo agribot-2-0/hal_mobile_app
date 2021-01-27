@@ -15,10 +15,10 @@ int16_t TplConfigHandle::getAngleSign(int16_t ang)
   return ((ang & sign_mask_) == sign_mask_ ? -1 : 1);
 }
 
-bool TplConfigHandle::setPto(const uint8_t* frame)
+bool TplConfigHandle::setPto(const uint8_t* const data)
 {
-  uint16_t pto = assembleU16FromFrame(frame[byte_index_.first], frame[byte_index_.zero]);
-  if (pto < limit_.pto_min || pto > limit_.pto_max)
+  uint16_t pto = assembleU16FromFrame(data[ByteIndex::first], data[ByteIndex::zero]);
+  if (pto < limit_.pto_rpm_min || pto > limit_.pto_rpm_max)
   {
     return false;
   }
@@ -26,10 +26,10 @@ bool TplConfigHandle::setPto(const uint8_t* frame)
   return true;
 }
 
-bool TplConfigHandle::setValveFlow(const uint8_t* frame, ValveColor sel_valve)
+bool TplConfigHandle::setValveFlow(const uint8_t* const data, ValveColor sel_valve)
 {
-  uint16_t valve_flow = assembleU16FromFrame(frame[byte_index_.first], frame[byte_index_.zero]);
-  if (valve_flow < limit_.valve_flow_min || valve_flow > limit_.valve_flow_max)
+  uint16_t valve_flow = assembleU16FromFrame(data[ByteIndex::first], data[ByteIndex::zero]);
+  if (valve_flow < limit_.valve_flow_percent_min || valve_flow > limit_.valve_flow_percent_max)
   {
     return false;
   }
@@ -41,21 +41,21 @@ bool TplConfigHandle::setValveFlow(const uint8_t* frame, ValveColor sel_valve)
     case ValveColor::blue:
       config_.blue_valve_flow = valve_flow;
       break;
-    case ValveColor::yellow:
-      config_.yellow_valve_flow = valve_flow;
+    case ValveColor::green:
+      config_.green_valve_flow = valve_flow;
       break;
   }
   return true;
 }
 
-bool TplConfigHandle::setAngle(const uint8_t* frame)
+bool TplConfigHandle::setAngle(const uint8_t* const data)
 {
   double angle = 0.0;
-  int16_t angle_tmp = assembleU16FromFrame(frame[byte_index_.first], frame[byte_index_.zero]);
+  int16_t angle_tmp = assembleU16FromFrame(data[ByteIndex::first], data[ByteIndex::zero]);
   int16_t sign = getAngleSign(angle_tmp);
   angle_tmp = ((~sign_mask_) & angle_tmp) * sign;
   angle = static_cast<double>(angle_tmp)/divider_;
-  if (angle < limit_.angle_min || angle > limit_.angle_max)
+  if (angle < limit_.angle_rad_min || angle > limit_.angle_rad_max)
   {
     return false;
   }
@@ -63,10 +63,10 @@ bool TplConfigHandle::setAngle(const uint8_t* frame)
   return true;
 }
 
-bool TplConfigHandle::setHeight(const uint8_t* frame)
+bool TplConfigHandle::setHeight(const uint8_t* const data)
 {
-  double height = static_cast<double>(assembleU16FromFrame(frame[byte_index_.first], frame[byte_index_.zero]))/divider_;
-  if (height < limit_.height_min || height > limit_.height_max)
+  double height = static_cast<double>(assembleU16FromFrame(data[ByteIndex::first], data[ByteIndex::zero]))/divider_;
+  if (height < limit_.height_meters_min || height > limit_.height_meters_max)
   {
     return false;
   }

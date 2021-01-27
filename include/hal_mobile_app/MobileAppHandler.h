@@ -55,14 +55,14 @@ class MobileAppHandler : public AgribotComponent
   uint uFrontToolAngle;
   uint uFrontToolLength;
   uint8_t u8FrontToolValveRedFlow;
-  uint8_t u8FrontToolValveYellowFlow;
+  uint8_t u8FrontToolValveGreenFlow;
   uint8_t u8FrontToolValveBlueFlow;
   uint8_t u8FrontToolMotorSpeed;
   uint uBackRFID;
   uint uBackToolAngle;
   uint uBackToolLength;
   uint8_t u8BackToolValveRedFlow;
-  uint8_t u8BackToolValveYellowFlow;
+  uint8_t u8BackToolValveGreenFlow;
   uint8_t u8BackToolValveBlueFlow;
   uint8_t u8BackToolMotorSpeed;
 
@@ -73,11 +73,11 @@ class MobileAppHandler : public AgribotComponent
   // TPL config
   TplConfigHandle front_tpl_config_;
   TplConfigHandle back_tpl_config_;
-  const struct
+  enum TplReturnCode : uint8_t
   {
-    uint8_t success = 0x00;
-    uint8_t failed = 0xFF;
-  } tpl_return_code_;
+    success = 0x00,
+    failed = 0xFF
+  };
 
   // simulation part
   bool bFreshData;
@@ -141,7 +141,7 @@ public:
                         const std::vector<std::vector<uint8_t>>& ids);   // NOLINT(runtime/references)
 
   // tpl control
-  bool tplSetConfig(const can_frame& message);
+  bool setTplConfig(const can_frame& message);
   tool_manager::TplConfig getTplConfig(SelectedTpl tpl);
   void sendTplResponseFrame(uint8_t ret_code, uint8_t id);
 };

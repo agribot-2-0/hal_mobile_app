@@ -259,22 +259,6 @@ int main(int argc, char** argv)
         // Send no error to the state machine
         StateMachineErrorPub.publish(ErrorIndicator);
       }
-      if ((u16Status & RECEIVED_CONFIGURATION) == RECEIVED_CONFIGURATION)
-      {
-        while (true)
-        {
-          CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_CONFIGURATION);
-          if (uCanID == 0)
-          {
-            break;
-          }
-          else
-          {
-            vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-            StateMachinePub.publish(FrameMsg);
-          }
-        }
-      }
       if ((u16Status & RECEIVED_ENG_ERROR_START) == RECEIVED_ENG_ERROR_START)
       {
         CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_ENG_ERROR_START);

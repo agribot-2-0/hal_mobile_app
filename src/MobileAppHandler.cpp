@@ -92,7 +92,7 @@ bool MobileAppHandler::bCheckByte(uint8_t frame_byte, uint8_t expected_data)
 
 bool MobileAppHandler::bRfidIsAntSelected(const can_frame& msg, uint8_t sel_ant)
 {
-  return bCheckByte(msg.data[CONFIG_TYPE_BYTE], MobileAppRfid::scan_trigger_frame) &&
+  return bCheckByte(msg.data[MobileAppRfid::com_byte], MobileAppRfid::scan_trigger_frame) &&
          bCheckByte((msg.data[MobileAppRfid::selected_antenna_byte] & sel_ant), sel_ant);
 }
 
@@ -177,48 +177,6 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
         sendTplResponseFrame(TplReturnCode::failed, message.data[MobileAppTpl::config_id_byte]);
       }
     }
-    else if ((MobileAppCanFrameId::protocol_configuration & addr_mask) == (message.can_id & addr_mask))
-    {
-      if (message.data[CONFIG_TYPE_BYTE] == CONFIG_FRONT_TOOL_AL)
-      {
-        uFrontToolAngle = static_cast<uint>(i16GetTwoBytes(CONFIG_TOOL_ANGLE_BYTE, message));
-        uFrontToolLength = static_cast<uint>(i16GetTwoBytes(CONFIG_TOOL_LENGTH_BYTE, message));
-        u8ReceivedConfigParts |= CONFIG_FRONT_TOOL_AL_MASK_PART;
-      }
-      else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_FRONT_TOOL_VM)
-      {
-        u8FrontToolValveRedFlow = message.data[CONFIG_TOOL_VALVE_R_BYTE];
-        u8FrontToolValveGreenFlow = message.data[CONFIG_TOOL_VALVE_G_BYTE];
-        u8FrontToolValveBlueFlow = message.data[CONFIG_TOOL_VALVE_B_BYTE];
-        u8FrontToolMotorSpeed = message.data[CONFIG_TOOL_MOTOR_BYTE];
-        u8ReceivedConfigParts |= CONFIG_FRONT_TOOL_VM_MASK_PART;
-      }
-      else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_BACK_TOOL_AL)
-      {
-        uBackToolAngle = static_cast<uint>(i16GetTwoBytes(CONFIG_TOOL_ANGLE_BYTE, message));
-        uBackToolLength = static_cast<uint>(i16GetTwoBytes(CONFIG_TOOL_LENGTH_BYTE, message));
-        u8ReceivedConfigParts |= CONFIG_BACK_TOOL_AL_MASK_PART;
-      }
-      else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_BACK_TOOL_VM)
-      {
-        u8BackToolValveRedFlow = message.data[CONFIG_TOOL_VALVE_R_BYTE];
-        u8BackToolValveGreenFlow = message.data[CONFIG_TOOL_VALVE_G_BYTE];
-        u8BackToolValveBlueFlow = message.data[CONFIG_TOOL_VALVE_B_BYTE];
-        u8BackToolMotorSpeed = message.data[CONFIG_TOOL_MOTOR_BYTE];
-        u8ReceivedConfigParts |= CONFIG_BACK_TOOL_VM_MASK_PART;
-      }
-      else if (message.data[CONFIG_TYPE_BYTE] == CONFIG_TOOLS_RFIDS)
-      {
-        uFrontRFID = static_cast<uint>(message.data[CONFIG_TOOL_RFID_FRONT_START_BYTE] << 16);
-        uFrontRFID = uFrontRFID + static_cast<uint>(message.data[CONFIG_TOOL_RFID_FRONT_START_BYTE + 1] << 8);
-        uFrontRFID = uFrontRFID + static_cast<uint>(message.data[CONFIG_TOOL_RFID_FRONT_START_BYTE + 2]);
-        uBackRFID = static_cast<uint>(message.data[CONFIG_TOOL_RFID_BACK_START_BYTE] << 16);
-        uBackRFID = uBackRFID + static_cast<uint>(message.data[CONFIG_TOOL_RFID_BACK_START_BYTE + 1] << 8);
-        uBackRFID = uBackRFID + static_cast<uint>(message.data[CONFIG_TOOL_RFID_BACK_START_BYTE + 2]);
-        u8ReceivedConfigParts |= CONFIG_TOOLS_RFIDS_MASK_PART;
-      }
-      u16Status |= RECEIVED_CONFIGURATION;
-    }
     FramesQueue.pop();
   }
   return u16Status;
@@ -277,68 +235,6 @@ void MobileAppHandler::vAssemblyStateMachineFrame(uint* uCanID, uint8_t* u8MsgBy
         ManualErrorTypeQueue.pop();
         u8MsgBytes[ERROR_SPECIFIC_BYTE] = ManualErrorSpecificQueue.front();
         ManualErrorSpecificQueue.pop();
-      }
-      else
-      {
-        *uCanID = 0;
-      }
-      break;
-    case RECEIVED_CONFIGURATION:
-      if ((u8ReceivedConfigParts & CONFIG_FRONT_TOOL_AL_MASK_PART) == CONFIG_FRONT_TOOL_AL_MASK_PART)
-      {
-        *uCanID = MobileAppCanFrameId::protocol_configuration;
-        u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_FRONT_TOOL_AL;
-        u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE] = (uFrontToolAngle & 0xFF00) >> 8;
-        u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE + 1] = uFrontToolAngle & 0x00FF;
-        u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE] = (uFrontToolLength & 0xFF00) >> 8;
-        u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE + 1] = uFrontToolLength & 0x00FF;
-
-        u8ReceivedConfigParts &= ~CONFIG_FRONT_TOOL_AL_MASK_PART;
-      }
-      else if ((u8ReceivedConfigParts & CONFIG_FRONT_TOOL_VM_MASK_PART) == CONFIG_FRONT_TOOL_VM_MASK_PART)
-      {
-        *uCanID = MobileAppCanFrameId::protocol_configuration;
-        u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_FRONT_TOOL_VM;
-        u8MsgBytes[CONFIG_TOOL_VALVE_R_BYTE] = u8FrontToolValveRedFlow;
-        u8MsgBytes[CONFIG_TOOL_VALVE_G_BYTE] = u8FrontToolValveGreenFlow;
-        u8MsgBytes[CONFIG_TOOL_VALVE_B_BYTE] = u8FrontToolValveBlueFlow;
-        u8MsgBytes[CONFIG_TOOL_MOTOR_BYTE] = u8FrontToolMotorSpeed;
-
-        u8ReceivedConfigParts &= ~CONFIG_FRONT_TOOL_VM_MASK_PART;
-      }
-      else if ((u8ReceivedConfigParts & CONFIG_BACK_TOOL_AL_MASK_PART) == CONFIG_BACK_TOOL_AL_MASK_PART)
-      {
-        *uCanID = MobileAppCanFrameId::protocol_configuration;
-        u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_BACK_TOOL_AL;
-        u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE] = (uBackToolAngle & 0xFF00) >> 8;
-        u8MsgBytes[CONFIG_TOOL_ANGLE_BYTE + 1] = uBackToolAngle & 0x00FF;
-        u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE] = (uBackToolLength & 0xFF00) >> 8;
-        u8MsgBytes[CONFIG_TOOL_LENGTH_BYTE + 1] = uBackToolLength & 0x00FF;
-
-        u8ReceivedConfigParts &= ~CONFIG_BACK_TOOL_AL_MASK_PART;
-      }
-      else if ((u8ReceivedConfigParts & CONFIG_BACK_TOOL_VM_MASK_PART) == CONFIG_BACK_TOOL_VM_MASK_PART)
-      {
-        *uCanID = MobileAppCanFrameId::protocol_configuration;
-        u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_BACK_TOOL_VM;
-        u8MsgBytes[CONFIG_TOOL_VALVE_R_BYTE] = u8BackToolValveRedFlow;
-        u8MsgBytes[CONFIG_TOOL_VALVE_G_BYTE] = u8BackToolValveGreenFlow;
-        u8MsgBytes[CONFIG_TOOL_VALVE_B_BYTE] = u8BackToolValveBlueFlow;
-        u8MsgBytes[CONFIG_TOOL_MOTOR_BYTE] = u8BackToolMotorSpeed;
-
-        u8ReceivedConfigParts &= ~CONFIG_BACK_TOOL_VM_MASK_PART;
-      }
-      else if ((u8ReceivedConfigParts & CONFIG_TOOLS_RFIDS_MASK_PART) == CONFIG_TOOLS_RFIDS_MASK_PART)
-      {
-        *uCanID = MobileAppCanFrameId::protocol_configuration;
-        u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_TOOLS_RFIDS;
-        u8MsgBytes[CONFIG_TOOL_RFID_FRONT_START_BYTE] = static_cast<uint8_t>((uFrontRFID & 0xFF0000) >> 16);
-        u8MsgBytes[CONFIG_TOOL_RFID_FRONT_START_BYTE + 1] = static_cast<uint8_t>((uFrontRFID & 0x00FF00) >> 8);
-        u8MsgBytes[CONFIG_TOOL_RFID_FRONT_START_BYTE + 2] = static_cast<uint8_t>((uFrontRFID & 0x0000FF));
-        u8MsgBytes[CONFIG_TOOL_RFID_BACK_START_BYTE] = static_cast<uint8_t>((uBackRFID & 0xFF0000) >> 16);
-        u8MsgBytes[CONFIG_TOOL_RFID_BACK_START_BYTE + 1] = static_cast<uint8_t>((uBackRFID & 0x00FF00) >> 8);
-        u8MsgBytes[CONFIG_TOOL_RFID_BACK_START_BYTE + 2] = static_cast<uint8_t>((uBackRFID & 0x0000FF));
-        u8ReceivedConfigParts &= ~CONFIG_TOOLS_RFIDS_MASK_PART;
       }
       else
       {

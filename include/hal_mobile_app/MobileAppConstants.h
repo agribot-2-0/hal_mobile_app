@@ -1,3 +1,10 @@
+/*
+ * Copyright (C) 2020 Agribot. All rights reserved.
+ */
+
+#pragma once
+
+#include <cstdint>
 
 namespace MobileAppCanFrameId
 {
@@ -49,31 +56,6 @@ inline constexpr uint8_t tpl_resp_frame_len{ 2 };
 #define LIN_VELO_PARSE_CONST 100
 
 constexpr uint16_t addr_mask = 0x7FF;
-
-#define CONFIG_TYPE_BYTE 0
-#define CONFIG_FRONT_TOOL_AL 1
-#define CONFIG_FRONT_TOOL_AL_MASK_PART 0x01
-#define CONFIG_FRONT_TOOL_VM 2
-#define CONFIG_FRONT_TOOL_VM_MASK_PART 0x02
-#define CONFIG_BACK_TOOL_AL 3
-#define CONFIG_BACK_TOOL_AL_MASK_PART 0x04
-#define CONFIG_BACK_TOOL_VM 4
-#define CONFIG_BACK_TOOL_VM_MASK_PART 0x08
-#define CONFIG_TOOLS_RFIDS 5
-#define CONFIG_TOOLS_RFIDS_MASK_PART 0x10
-#define CONFIG_COMPLETE_MASK (CONFIG_FRONT_TOOL_AL_MASK_PART | CONFIG_FRONT_TOOL_VM_MASK_PART | \
-                              CONFIG_BACK_TOOL_AL_MASK_PART | CONFIG_BACK_TOOL_VM_MASK_PART | \
-                              CONFIG_TOOLS_RFIDS_MASK_PART)
-
-#define CONFIG_TOOL_RFID_FRONT_START_BYTE 1
-#define CONFIG_TOOL_RFID_BACK_START_BYTE 4
-#define CONFIG_TOOL_ANGLE_BYTE 1
-#define CONFIG_TOOL_LENGTH_BYTE 3
-
-#define CONFIG_TOOL_VALVE_R_BYTE 1
-#define CONFIG_TOOL_VALVE_G_BYTE 2
-#define CONFIG_TOOL_VALVE_B_BYTE 3
-#define CONFIG_TOOL_MOTOR_BYTE 4
 
 #define MAX_RADIUS 10
 #define MIN_RADIUS 1.5

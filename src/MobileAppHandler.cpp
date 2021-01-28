@@ -153,8 +153,8 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
     else if ((MobileAppCanFrameId::protocol_eng_error & addr_mask) == (message.can_id & addr_mask))
     {
       CodeNumberQueue.push(message.data[ENG_ERROR_NUM_BYTE]);
-      uint SPN = message.data[SPN_FIRST_BYTE] + message.data[SPN_FIRST_BYTE + 1] << 8 + message.data[SPN_FIRST_BYTE + 2]
-                                                                                 << 16;
+      uint SPN = (message.data[SPN_FIRST_BYTE] + message.data[SPN_FIRST_BYTE + 1])
+                 << (8 + message.data[SPN_FIRST_BYTE + 2]) << 16;
       SPNQueue.push(SPN);
       FMIQueue.push(message.data[FMI_BYTE]);
       OCCQueue.push(message.data[OCC_BYTE]);
@@ -284,7 +284,7 @@ void MobileAppHandler::vAssemblyStateMachineFrame(uint* uCanID, uint8_t* u8MsgBy
       }
       break;
     case RECEIVED_CONFIGURATION:
-      if (u8ReceivedConfigParts & CONFIG_FRONT_TOOL_AL_MASK_PART == CONFIG_FRONT_TOOL_AL_MASK_PART)
+      if ((u8ReceivedConfigParts & CONFIG_FRONT_TOOL_AL_MASK_PART) == CONFIG_FRONT_TOOL_AL_MASK_PART)
       {
         *uCanID = MobileAppCanFrameId::protocol_configuration;
         u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_FRONT_TOOL_AL;
@@ -295,7 +295,7 @@ void MobileAppHandler::vAssemblyStateMachineFrame(uint* uCanID, uint8_t* u8MsgBy
 
         u8ReceivedConfigParts &= ~CONFIG_FRONT_TOOL_AL_MASK_PART;
       }
-      else if (u8ReceivedConfigParts & CONFIG_FRONT_TOOL_VM_MASK_PART == CONFIG_FRONT_TOOL_VM_MASK_PART)
+      else if ((u8ReceivedConfigParts & CONFIG_FRONT_TOOL_VM_MASK_PART) == CONFIG_FRONT_TOOL_VM_MASK_PART)
       {
         *uCanID = MobileAppCanFrameId::protocol_configuration;
         u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_FRONT_TOOL_VM;
@@ -306,7 +306,7 @@ void MobileAppHandler::vAssemblyStateMachineFrame(uint* uCanID, uint8_t* u8MsgBy
 
         u8ReceivedConfigParts &= ~CONFIG_FRONT_TOOL_VM_MASK_PART;
       }
-      else if (u8ReceivedConfigParts & CONFIG_BACK_TOOL_AL_MASK_PART == CONFIG_BACK_TOOL_AL_MASK_PART)
+      else if ((u8ReceivedConfigParts & CONFIG_BACK_TOOL_AL_MASK_PART) == CONFIG_BACK_TOOL_AL_MASK_PART)
       {
         *uCanID = MobileAppCanFrameId::protocol_configuration;
         u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_BACK_TOOL_AL;
@@ -317,7 +317,7 @@ void MobileAppHandler::vAssemblyStateMachineFrame(uint* uCanID, uint8_t* u8MsgBy
 
         u8ReceivedConfigParts &= ~CONFIG_BACK_TOOL_AL_MASK_PART;
       }
-      else if (u8ReceivedConfigParts & CONFIG_BACK_TOOL_VM_MASK_PART == CONFIG_BACK_TOOL_VM_MASK_PART)
+      else if ((u8ReceivedConfigParts & CONFIG_BACK_TOOL_VM_MASK_PART) == CONFIG_BACK_TOOL_VM_MASK_PART)
       {
         *uCanID = MobileAppCanFrameId::protocol_configuration;
         u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_BACK_TOOL_VM;
@@ -328,7 +328,7 @@ void MobileAppHandler::vAssemblyStateMachineFrame(uint* uCanID, uint8_t* u8MsgBy
 
         u8ReceivedConfigParts &= ~CONFIG_BACK_TOOL_VM_MASK_PART;
       }
-      else if (u8ReceivedConfigParts & CONFIG_TOOLS_RFIDS_MASK_PART == CONFIG_TOOLS_RFIDS_MASK_PART)
+      else if ((u8ReceivedConfigParts & CONFIG_TOOLS_RFIDS_MASK_PART) == CONFIG_TOOLS_RFIDS_MASK_PART)
       {
         *uCanID = MobileAppCanFrameId::protocol_configuration;
         u8MsgBytes[CONFIG_TYPE_BYTE] = CONFIG_TOOLS_RFIDS;

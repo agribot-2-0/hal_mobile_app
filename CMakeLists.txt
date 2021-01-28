@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(hal_mobile_app)
 
-add_compile_options(-std=c++17)
+add_compile_options(-std=c++17 -Wall -Wextra -pedantic)
 
 #############################################################################
 ## Find catkin packages and libraries for catkin and system dependencies   ##

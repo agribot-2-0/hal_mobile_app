@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <hal_mobile_app/TplConfigHandle.h>
+#include <hal_mobile_app/TplConfigHandle/TplConfigHandle.h>
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/ToolManagerScan.h>
 #include <agribot_common/Can.h>
@@ -71,8 +71,8 @@ class MobileAppHandler : public AgribotComponent
   bool scan_back_ = false;
 
   // TPL config
-  TplConfigHandle front_tpl_config_;
-  TplConfigHandle back_tpl_config_;
+  TplConfig::TplConfigHandle front_tpl_config_;
+  TplConfig::TplConfigHandle back_tpl_config_;
   enum TplReturnCode : uint8_t
   {
     success = 0x00,
@@ -90,7 +90,7 @@ class MobileAppHandler : public AgribotComponent
   float fBackLinear;
   float fBackAngular;
 
-public:
+ public:
   explicit MobileAppHandler(const char* pchCanChannel);
   ~MobileAppHandler();
   void vReceiveCanFrames();
@@ -134,14 +134,14 @@ public:
   bool bScanBackTriggered();
 
   void setRfidFrameHeader(can_frame& msg,  // NOLINT(runtime/references)
-                          uint8_t frame_size, uint8_t com_val,
-                          uint8_t selected_antenna, uint8_t epc_words_cnt);
+                          uint8_t frame_size, uint8_t com_val, uint8_t selected_antenna, uint8_t epc_words_cnt);
 
   void vSendRfidTagsIds(const uint8_t sel_ant,
-                        const std::vector<std::vector<uint8_t>>& ids);   // NOLINT(runtime/references)
+                        const std::vector<std::vector<uint8_t>>& ids);  // NOLINT(runtime/references)
 
   // tpl control
-  bool setTplConfig(const can_frame& message);
-  tool_manager::TplConfig getTplConfig(SelectedTpl tpl);
-  void sendTplResponseFrame(uint8_t ret_code, uint8_t id);
+  bool isTplPositionChangeRequested(const can_frame& message);
+  bool setTplConfig(const CanFrame& frame);
+  tool_manager::TplConfig getTplConfig(const TplConfig::SelectedTpl tpl);
+  void sendTplResponseFrame(const uint8_t ret_code, const uint8_t id);
 };

@@ -4,6 +4,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(hal_mobile_app)
 
+add_compile_options(-std=c++17 -Wall -Wextra -pedantic)
+
 #############################################################################
 ## Find catkin packages and libraries for catkin and system dependencies   ##
 #############################################################################
@@ -51,7 +53,7 @@ include_directories(
 )
 
 link_directories("${PROJECT_SOURCE_DIR}")
-add_executable(mobile_app_node src/mobile_app_node.cpp src/MobileAppHandler.cpp)
+add_executable(mobile_app_node src/mobile_app_node.cpp src/MobileAppHandler.cpp src/TplConfigHandle/TplConfigHandle.cpp)
 target_link_libraries(mobile_app_node ${catkin_LIBRARIES})
 add_dependencies(mobile_app_node ${catkin_EXPORTED_TARGETS})
 

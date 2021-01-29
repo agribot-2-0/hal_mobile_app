@@ -7,6 +7,7 @@
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/AgribotManualControl.h>
 #include <agribot_msgs/AgribotAppErrorFlag.h>
+#include <agribot_msgs/AgribotTool.h>
 #include <industrial_msgs/RobotMode.h>
 #include <geometry_msgs/Twist.h>
 #include <hal_mobile_app/MobileAppHandler.h>
@@ -64,9 +65,20 @@ void callRfidScanSrv(ros::ServiceClient client,
   bool srv_ret = client.call(service);
   if (srv_ret && (service.response.result == service.response.SUCCESS))
   {
-    CommHandlerControl.vSendRfidTagsIds(sel_ant,
-                                        castMsgVectorToStdVec(service.response.ids));
+    CommHandlerControl.vSendRfidTagsIds(sel_ant, castMsgVectorToStdVec(service.response.ids));
   }
+}
+
+agribot_msgs::AgribotTool tplConfigToToolMsg(const tool_manager::TplConfig& config)
+{
+  agribot_msgs::AgribotTool tool_msg;
+  tool_msg.tpl_angle = config.tpl_angle;
+  tool_msg.tpl_height = config.tpl_height;
+  tool_msg.green_valve_flow = config.green_valve_flow;
+  tool_msg.red_valve_flow = config.red_valve_flow;
+  tool_msg.blue_valve_flow = config.blue_valve_flow;
+  tool_msg.pto_rpm = config.pto_rpm;
+  return tool_msg;
 }
 
 int main(int argc, char** argv)
@@ -103,9 +115,14 @@ int main(int argc, char** argv)
   // Topic used to read the path name from task config file
   ros::Publisher StateMachineTaskPub = nh.advertise<std_msgs::String>("/agribot/state_machine/task", 1);
   // The client of scan tags service
-  ros::ServiceClient rfid_tags_scanner_client =
-    nh.serviceClient<agribot_msgs::ToolManagerScan>("agribot/tool_management/scan");
+  ros::ServiceClient rfid_tags_scanner_client = nh.serviceClient<agribot_msgs::ToolManagerScan>("agribot/"
+                                                                                                "tool_management/scan");
   agribot_msgs::ToolManagerScan rfid_tags_scanner_srv;
+  // Tpl config publishers
+  ros::Publisher front_tpl_config_publisher =
+      nh.advertise<agribot_msgs::AgribotTool>("/agribot/control/tool/front/manual", 1);
+  ros::Publisher back_tpl_config_publisher =
+      nh.advertise<agribot_msgs::AgribotTool>("/agribot/control/tool/back/manual", 1);
 
   if (bSimulation == true)
   {
@@ -209,7 +226,9 @@ int main(int argc, char** argv)
         {
           CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_PROTOCOL_ERROR);
           if (uCanID == 0)
+          {
             break;
+          }
           else
           {
             vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
@@ -225,7 +244,9 @@ int main(int argc, char** argv)
         {
           CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_MANUALSTEERING_ERROR);
           if (uCanID == 0)
+          {
             break;
+          }
           else
           {
             vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
@@ -237,20 +258,6 @@ int main(int argc, char** argv)
       {
         // Send no error to the state machine
         StateMachineErrorPub.publish(ErrorIndicator);
-      }
-      if ((u16Status & RECEIVED_CONFIGURATION) == RECEIVED_CONFIGURATION)
-      {
-        while (true)
-        {
-          CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_CONFIGURATION);
-          if (uCanID == 0)
-            break;
-          else
-          {
-            vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-            StateMachinePub.publish(FrameMsg);
-          }
-        }
       }
       if ((u16Status & RECEIVED_ENG_ERROR_START) == RECEIVED_ENG_ERROR_START)
       {
@@ -264,7 +271,9 @@ int main(int argc, char** argv)
         {
           CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_ENG_ERROR);
           if (uCanID == 0)
+          {
             break;
+          }
           else
           {
             vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
@@ -282,6 +291,10 @@ int main(int argc, char** argv)
     {
       callRfidScanSrv(rfid_tags_scanner_client, rfid_tags_scanner_srv, rfid_tags_scanner_srv.request.SCAN_BACK);
     }
+    front_tpl_config_publisher.publish(
+        tplConfigToToolMsg(CommHandlerControl.getTplConfig(TplConfig::SelectedTpl::front)));
+    back_tpl_config_publisher.publish(
+        tplConfigToToolMsg(CommHandlerControl.getTplConfig(TplConfig::SelectedTpl::back)));
     ros::spinOnce();
     loop_rate.sleep();
   }

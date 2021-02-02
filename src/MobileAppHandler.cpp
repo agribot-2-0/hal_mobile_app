@@ -415,6 +415,7 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
   }
   for (const auto& tag_id : ids)
   {
+    com = MobileAppRfid::detected_tags_start_frame;
     cnt = 0;
     // Start frame with com = 2. It contains information about EPC length and selected antenna
     message.can_id = MobileAppCanFrameId::rfid;

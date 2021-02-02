@@ -25,7 +25,7 @@ inline constexpr uint16_t tpl_response{ 0x13E };
 
 namespace MobileAppRfid
 {
-inline constexpr uint32_t frame_send_delay{ 20000 };
+inline constexpr uint32_t frame_send_delay{ 50000 };
 
 inline constexpr uint8_t selected_antenna_byte{ 0x01 };
 inline constexpr uint8_t com_byte{ 0 };

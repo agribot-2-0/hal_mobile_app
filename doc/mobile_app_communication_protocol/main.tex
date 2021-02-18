@@ -90,7 +90,7 @@ Decoding:
     \item $EFT = ((EFT\_1<<8) | (EFT\_0))/10$
 \end{itemize}
 
-\subsection{Hydraulics data - nieaktualne, TODO(adam): uaktualnic}
+\subsection{Hydraulics data}
 From TTControl
 \begin{itemize}
     \item Momentary predicted work time with remaining fuel (WT)
@@ -112,7 +112,6 @@ Decoding:
 \begin{itemize}
     \item $OT = OT - 80$
 \end{itemize}
-\textbf{ TODO: add new hydraulics frames, figure out why in hal\_mobile\_app, ID of frame is equal to 0x6A} \\
 
 \subsection{Carts angle and chassis angle}
 From TTControl
@@ -133,50 +132,12 @@ From TTControl
         \hline
     \end{tabular}
 
-
 \end{center}
 Decoding:
 \begin{itemize}
     \item All above values needs to be devided by 10 (same maner as in ETH in Frame 2).
 \end{itemize}
 
-
-% \subsection{Weather station 1}
-% From TTControl
-% \begin{itemize}
-%     \item Wind speed data (WS)
-%     \item Wind direction data (WD)
-% \end{itemize}{}
-% \begin{center}
-% \begin{tabular}{|c| c | c | c | c | c | c | c | c |}
-%     \hline
-%     ID & B7 & B6 & B5 & B4 & B3 & B2 & B1 & B0\\ 
-%     \hline
-%     0x6E & WD\_0 & WD\_1 & WD\_2 & WD\_3 & WS\_0  & WS\_1 & WS\_2 & WS\_3\\
-%     \hline
-% \end{tabular}
-% \end{center}
-% Decoding:
-% \begin{itemize}
-%     \item WS=WS/10
-% \end{itemize}
-
-% \subsection{Weather station 2}
-% From TTControl
-% \begin{itemize}
-%     \item Temperature (TMP)
-%     \item Humidity (HUM)
-%     \item Atmospheric pressure (ATM)
-% \end{itemize}{}
-% \begin{center}
-% \begin{tabular}{|c| c | c | c | c | c | c | c | c |}
-%     \hline 
-%     ID & B7 & B6 & B5 & B4 & B3 & B2 & B1 & B0\\ 
-%     \hline
-%     0x6F & 0x60 & 0x50 & ATM\_0 & ATM\_1  & HUM\_0 & HUM\_1 & TMP\_0 & TMP\_1 \\
-%     \hline
-% \end{tabular}
-% \end{center}
 
 \newpage
 \section{State changing and command frames}
@@ -194,26 +155,20 @@ From Mobile Application and TTControl. This frame needs to be send with proper v
     \end{tabular}
 \end{center}
 
-\textbf{ TODO: add sequence diagram} \\
-
 \begin{plantuml}
     @startuml
-    Alice -> Bob: Hello
-    Alice <- Bob: Hi!
+    MobileApp -> MobileApp : value = 0
+    MobileApp -> TTControl : HB_ID = value
+    TTControl -> TTControl : Check if this is an initial value
+    MobileApp <-- TTControl: HB_ID = value
+    loop
+        MobileApp -> MobileApp : Increment value
+        MobileApp -> TTControl : HB_ID = value
+        TTControl -> TTControl : Check if the difference between the received value the last one is equal to 1
+        MobileApp <-- TTControl: HB_ID = value
+    end
     @enduml
 \end{plantuml}
-
-
-Example:
-\begin{enumerate}
-    \item App send HB\_ID = 0,
-    \item Robots checks if this is an initial value = 0 and sends it back,
-    \item App increment the value, and sends HB\_ID = 1,
-    \item Robots checks if the difference between the received value the last one is equal to 1, its OK then sends it back,
-    \item ...
-    \item ...
-\end{enumerate}
-
 
 
 \subsection{Handshake frame}
@@ -230,11 +185,25 @@ From Mobile Application. This frame initializes all the communication with the r
     \end{tabular}
 \end{center}
 
-\textbf{ TODO: add sequence diagram of handshake procedure} \\
-
-\textbf{ TODO: add response frame 0x0b} \\
+\textbf{Frame length = 1 byte}
+\begin{center}
+    \begin{tabular}{| p{20pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} |}
+        \hline
+        ID   & B0   & B1 & B2 & B3 & B4 & B5 & B6 & B7 \\
+        \hline
+        0x0B & 0x01 & *  & *  & *  & *  & *  & *  & *  \\
+        \hline
+    \end{tabular}
+\end{center}
 
 TTControl send the exact same message as the confirmation of receiving this command.
+
+\begin{plantuml}
+    @startuml
+    MobileApp -> TTControl : ID = 0x0A
+    MobileApp <-- TTControl: ID = 0x0B
+    @enduml
+\end{plantuml}
 
 \subsection{Manual steering initialization}
 From Mobile Application. The data is only one dummy byte. This frame is used to initiate the manual steering state.
@@ -264,7 +233,16 @@ From TTControl. The data is only one dummy byte. This frame is send to inform mo
     \end{tabular}
 \end{center}
 
-\textbf{ TODO: add sequence diagram of manual steering initialization procedure} \\
+\begin{plantuml}
+    @startuml
+    MobileApp -> TTControl : ID = 0x14
+    MobileApp <-- TTControl: ID = 0x14
+    TTControl -> TTControl : MANUAL_READY
+    MobileApp <-- TTControl : ID = 0x15
+    MobileApp -> TTControl : ID = 0x15
+    TTControl -> TTControl : MANUAL_ACTIVE
+    @enduml
+\end{plantuml}
 
 \newpage
 \section{Error frames}
@@ -274,7 +252,7 @@ If the there is an error with robot, a frame describing the problem is send
     \item ERR -- a 2-byte number describing error code
 \end{itemize}{}
 
-\textbf{Frame length = 3 (?)}
+\textbf{Frame length = 2}
 \begin{center}
     \begin{tabular}{| p{20pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} |}
         \hline
@@ -292,7 +270,7 @@ If there are errors in the engine, a frame announcing the problem is send
     \item LAMP\_STATE -- the state of lamps which describe the severity of the problems
 \end{itemize}{}
 
-\textbf{Frame length = 2 (?)}
+\textbf{Frame length = 2}
 \begin{center}
     \begin{tabular}{| p{20pt} | p{45pt} | p{60pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} |}
         \hline
@@ -324,6 +302,22 @@ A frame containing one of the announced error frames. Byte order LSB first.
     \end{tabular}
 \end{center}
 
+\subsection{Manual error frames}
+If the there is an error during manual commands, an error frame is sent
+\begin{itemize}
+    \item ERR -- a 2-byte number describing error code
+\end{itemize}{}
+
+\textbf{Frame length = 2}
+\begin{center}
+    \begin{tabular}{| p{20pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} |}
+        \hline
+        ID   & B0     & B1     & B2 & B3 & B4 & B5 & B6 & B7 \\
+        \hline
+        0xC9 & ERR\_1 & ERR\_0 & *  & *  & *  & *  & *  & *  \\
+        \hline
+    \end{tabular}
+\end{center}
 
 \newpage
 \section{Manual command frames}
@@ -339,7 +333,7 @@ Mobile application to TTControl.
     \item BACK\_SEL - if 1, back cart selected. If 0, back cart deselected
 \end{itemize}{}
 
-\textbf{Frame length = 4 (?)}
+\textbf{Frame length = 4}
 \begin{center}
     \begin{tabular}{|c| c | c | c | c | c | c | c | c |}
         \hline
@@ -350,7 +344,12 @@ Mobile application to TTControl.
     \end{tabular}
 \end{center}
 
-\textbf{TODO: podobnie jak w Control tool position frame, wysylana jest ramka z ID: 0x32 i B0: 0x32. Dowiedziec sie dlaczego i czy jest to potrzebne}
+\begin{plantuml}
+    @startuml
+    MobileApp -> TTControl : ID = 0x32, 
+    MobileApp <-- TTControl: ID = 0x32, B0=0x32 (confirmation)
+    @enduml
+\end{plantuml}
 
 \subsection{Override cart rotation}
 
@@ -363,7 +362,7 @@ Mobile application to TTControl.
     \item DIR\_BACK - if 1, rotate back cart left, if 0, rotate back cart right
 \end{itemize}{}
 
-\textbf{Frame length = 4 (?)}
+\textbf{Frame length = 4}
 \begin{center}
     \begin{tabular}{|c| c | c | c | c | c | c | c | c |}
         \hline
@@ -374,6 +373,13 @@ Mobile application to TTControl.
     \end{tabular}
 \end{center}
 
+\begin{plantuml}
+    @startuml
+    MobileApp -> TTControl : ID = 0x33, 
+    MobileApp <-- TTControl: ID = 0x33, B0=0x33 (confirmation)
+    @enduml
+\end{plantuml}
+
 \subsection{Joystick frame}
 From Mobile Application. This frame is used to move the robot around and needs to be send every 300 ms or the command timeout will occur and the controller will halt the outputs and the robot will stop.
 \begin{itemize}
@@ -382,9 +388,6 @@ From Mobile Application. This frame is used to move the robot around and needs t
     \item RAD - radius value
     \item VEL - velocity value
 \end{itemize}{}
-
-\textbf{TODO: add  radius (*10) and velocity values (*100) calculation} \\
-
 
 \textbf{Frame length = 8 }
 \begin{center}
@@ -397,23 +400,14 @@ From Mobile Application. This frame is used to move the robot around and needs t
     \end{tabular}
 \end{center}
 
+Decoding:
+\begin{itemize}
+    \item $RAD = RAD/10$
+    \item $VEL = VEL/100$
+\end{itemize}
 
-\subsection{STOP frame}
-From Mobile Application. This frame is used to stop any ongoing track moving tasks like, aligning carts and switches. It is used to start and stop the engine too, by sending first this frame and then an Start Stop engine frame.
 
-\textbf{Frame length = 1 }
-\begin{center}
-    \begin{tabular}{| p{20pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} |}
-        \hline
-        ID   & B0   & B1 & B2 & B3 & B4 & B5 & B6 & B7 \\
-        \hline
-        0xFF & 0xFF & *  & *  & *  & *  & *  & *  & *  \\
-        \hline
-    \end{tabular}
-\end{center}
-\textbf{TODO: add sequence diagram of stop engine procedure} \\
-
-\subsection{Start/Stop engine frame}
+\subsection{Start Engine}
 From Mobile Application. This frame is used to start the engine, by sending 2 of them in interval shorter than 200 ms and stop the engine by sending it for 2 seconds.
 
 \textbf{Frame length = 1}
@@ -427,30 +421,37 @@ From Mobile Application. This frame is used to start the engine, by sending 2 of
     \end{tabular}
 \end{center}
 
-\textbf{TODO: add sequence diagram of start engine procedure} \\
+\begin{plantuml}
+    @startuml
+    MobileApp -> TTControl : ID = 0xFF, B0=0xFF
+    MobileApp -> TTControl : ID = 0x5A
+    @enduml
+\end{plantuml}
 
 
-\subsection{Manual error frames}
-If the there is an error during manual commands, an error frame is sent
-\begin{itemize}
-    \item ERR -- a 2-byte number describing error code
-\end{itemize}{}
+\subsection{STOP Engine}
+From Mobile Application. This frame is used to stop any ongoing track moving tasks like, aligning carts and switches. It is used to start and stop the engine too, by sending first this frame and then an Start Stop engine frame.
 
-\textbf{Frame length = 2 (?)}
+\textbf{Frame length = 1 }
 \begin{center}
     \begin{tabular}{| p{20pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} |}
         \hline
-        ID   & B0     & B1     & B2 & B3 & B4 & B5 & B6 & B7 \\
+        ID   & B0   & B1 & B2 & B3 & B4 & B5 & B6 & B7 \\
         \hline
-        0xC9 & ERR\_1 & ERR\_0 & *  & *  & *  & *  & *  & *  \\
+        0xFF & 0xFF & *  & *  & *  & *  & *  & *  & *  \\
         \hline
     \end{tabular}
 \end{center}
 
+\begin{plantuml}
+    @startuml
+    MobileApp -> TTControl : ID = 0xFF, B0=0xFF
+    MobileApp -> TTControl : ID = 0x5A
+    @enduml
+\end{plantuml}
+
 \newpage
 \section{Tools control}
-
-\textbf{TODO: remove unnecessary config frames in hal\_mobile\_app}
 
 \subsection{Control tool override - controlling the valves}
 From Mobile Application to TTControl (also from Advantech to TTControl). Every switch control a hydraulic valve connected to a specific part of the robot tools.

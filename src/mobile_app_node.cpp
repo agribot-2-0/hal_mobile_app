@@ -4,6 +4,7 @@
 
 #include <ros/ros.h>
 #include <ros/console.h>
+#include <agribot_common/CommonFunctions/ros_common_functions.h>
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/AgribotManualControl.h>
 #include <agribot_msgs/AgribotAppErrorFlag.h>
@@ -17,9 +18,7 @@
 
 #define HEADER_STRING_MOB_APP_FRAME "mobile_app_commands_link"
 
-const char cestrUsedCAN[] = "can1";
-
-MobileAppHandler CommHandlerControl(cestrUsedCAN);
+MobileAppHandler CommHandlerControl;
 
 void synchro_callback(const ros::TimerEvent& event)
 {
@@ -99,6 +98,20 @@ int main(int argc, char** argv)
       bSimulation = false;
     }
   }
+
+  std::string selected_can;
+  try
+  {
+    selected_can = ros_common_functions::getRosParam<std::string>("/hal_mobile_app/can_bus_name");
+  }
+  catch (const std::string& ex)
+  {
+    ROS_ERROR_STREAM("[HAL_AGRIBOT_CONTROL] " + ex);
+    ros::shutdown();
+  }
+  std::unique_ptr<Can> can_handler = std::make_unique<Can>();
+  can_handler->iInitialize(selected_can.c_str());
+  CommHandlerControl.initializeCanHandler(std::move(can_handler));
   // Use this topic to communicate application events
   // with the robot state machine
   ros::Publisher StateMachinePub =

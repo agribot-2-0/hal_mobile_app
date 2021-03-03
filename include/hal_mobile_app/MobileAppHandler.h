@@ -7,6 +7,7 @@
 #include <hal_mobile_app/TplConfigHandle/TplConfigHandle.h>
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/ToolManagerScan.h>
+#include <agribot_common/CanBus/ICan.h>
 #include <agribot_common/Can.h>
 #include <agribot_common/AgribotComponent.h>
 #include <vector>
@@ -27,7 +28,7 @@
 
 class MobileAppHandler : public AgribotComponent
 {
-  Can CanHandler;
+  std::unique_ptr<ICan> can_handler_;
   std::queue<can_frame> FramesQueue;
   bool bSendToController = false;
   bool bArcFreshData = false;
@@ -90,8 +91,9 @@ class MobileAppHandler : public AgribotComponent
   float fBackAngular;
 
  public:
-  explicit MobileAppHandler(const char* pchCanChannel);
+  MobileAppHandler();
   ~MobileAppHandler();
+  void initializeCanHandler(std::unique_ptr<ICan> can_handler);
   void vReceiveCanFrames();
   bool bCheckByte(uint8_t frame_byte, uint8_t expected_data);
   bool bRfidIsAntSelected(const can_frame& msg, uint8_t sel_ant);

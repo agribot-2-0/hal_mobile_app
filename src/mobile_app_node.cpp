@@ -35,6 +35,25 @@ void vAppTaskChoosedEventCallback(const std_msgs::String::ConstPtr& ptrMsg)
   CommHandlerControl.vSetChosenTask(ptrMsg->data);
 }
 
+tool_manager::TplConfig tplMsgToStruct(const agribot_msgs::AgribotTool& msg)
+{
+
+}
+
+void frontToolFeedbackCallback(const agribot_msgs::AgribotTool& msg)
+{
+  std::vector<std::uint8_t> frame_data;
+  frame_data = CommHandlerControl.prepareTplFeedbackFrame(tplMsgToStruct(msg));
+  CommHandlerControl.sendTplFeedbackFrame(TplConfig::SelectedTpl::front, frame_data);
+}
+
+void backToolFeedbackCallback(const agribot_msgs::AgribotTool& msg)
+{
+  std::vector<std::uint8_t> frame_data;
+  frame_data = CommHandlerControl.prepareTplFeedbackFrame(tplMsgToStruct(msg));
+  CommHandlerControl.sendTplFeedbackFrame(TplConfig::SelectedTpl::back, frame_data);
+}
+
 void vFillTheMessageObject(agribot_msgs::AgribotMobileAppFrame* ptrFrameMsg, uint uCanID, uint8_t* u8MsgBytes)
 {
   ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
@@ -125,6 +144,10 @@ int main(int argc, char** argv)
       nh.advertise<agribot_msgs::AgribotAppErrorFlag>("/agribot/state_machine/error", 2);
   // Topic used to read the path name from task config file
   ros::Subscriber AppTaskChoosedEventsSub = nh.subscribe("/agribot/chosen_task_name", 1, vAppTaskChoosedEventCallback);
+  // Topic for feedback from front TPL:
+  ros::Subscriber tpl_front_sub = nh.subscribe("/agribot/encoder/tool/front", 1, frontToolFeedbackCallback);
+  // Topic for feedback from back TPL:
+  ros::Subscriber tpl_back_sub = nh.subscribe("/agribot/encoder/tool/back", 1, backToolFeedbackCallback);
   // Topic used to read the path name from task config file
   ros::Publisher StateMachineTaskPub = nh.advertise<std_msgs::String>("/agribot/state_machine/task", 1);
   // The client of scan tags service
@@ -304,6 +327,7 @@ int main(int argc, char** argv)
     {
       callRfidScanSrv(rfid_tags_scanner_client, rfid_tags_scanner_srv, rfid_tags_scanner_srv.request.SCAN_BACK);
     }
+    // Tool contro publish:
     front_tpl_config_publisher.publish(
         tplConfigToToolMsg(CommHandlerControl.getTplConfig(TplConfig::SelectedTpl::front)));
     back_tpl_config_publisher.publish(

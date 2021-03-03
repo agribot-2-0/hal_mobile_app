@@ -514,3 +514,12 @@ void MobileAppHandler::sendTplResponseFrame(const uint8_t ret, const uint8_t id)
   message.data[MobileAppTpl::ret_code_byte] = static_cast<uint8_t>(ret);
   can_handler_->iSendFrame(&message, false);
 }
+
+// tpl feedback:
+std::vector<std::uint8_t> MobileAppHandler::prepareTplFeedbackFrame(const tool_manager::TplConfig& feedback)
+{
+}
+
+void MobileAppHandler::sendTplFeedbackFrame(const TplConfig::SelectedTpl tpl, const std::vector<std::uint8_t>& frame)
+{
+}

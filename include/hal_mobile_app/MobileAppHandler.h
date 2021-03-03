@@ -5,6 +5,7 @@
 #pragma once
 
 #include <hal_mobile_app/TplConfigHandle/TplConfigHandle.h>
+#include <hal_mobile_app/TplFeedback/TplFeedback.h>
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/ToolManagerScan.h>
 #include <agribot_common/CanBus/ICan.h>
@@ -146,4 +147,8 @@ class MobileAppHandler : public AgribotComponent
   bool setTplConfig(const CanFrame& frame);
   tool_manager::TplConfig getTplConfig(const TplConfig::SelectedTpl tpl);
   void sendTplResponseFrame(const uint8_t ret_code, const uint8_t id);
+
+  //tpl feedback:
+  std::vector<std::uint8_t> prepareTplFeedbackFrame(const tool_manager::TplConfig& feedback);
+  void sendTplFeedbackFrame(const TplConfig::SelectedTpl tpl, const std::vector<std::uint8_t>& frame);
 };

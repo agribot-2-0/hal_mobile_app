@@ -53,7 +53,7 @@ include_directories(
 )
 
 link_directories("${PROJECT_SOURCE_DIR}")
-add_executable(mobile_app_node src/mobile_app_node.cpp src/MobileAppHandler.cpp src/TplConfigHandle/TplConfigHandle.cpp)
+add_executable(mobile_app_node src/mobile_app_node.cpp src/MobileAppHandler.cpp src/TplConfigHandle/TplConfigHandle.cpp src/TplFeedback/TplFeedback.cpp)
 target_link_libraries(mobile_app_node ${catkin_LIBRARIES})
 add_dependencies(mobile_app_node ${catkin_EXPORTED_TARGETS})
 
@@ -78,5 +78,5 @@ install(DIRECTORY launch
 
 
 ## Add gtest based cpp test target and link libraries
-catkin_add_gtest(${PROJECT_NAME}-test test/utest.cpp src/MobileAppHandler.cpp src/TplConfigHandle/TplConfigHandle.cpp)
+catkin_add_gtest(${PROJECT_NAME}-test test/utest.cpp src/MobileAppHandler.cpp src/TplConfigHandle/TplConfigHandle.cpp src/TplFeedback/TplFeedback.cpp)
 target_link_libraries(${PROJECT_NAME}-test ${agribot_common_LIBRARIES} gmock gtest)

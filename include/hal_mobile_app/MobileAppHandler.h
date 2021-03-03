@@ -10,6 +10,7 @@
 #include <agribot_common/CanBus/ICan.h>
 #include <agribot_common/Can.h>
 #include <agribot_common/AgribotComponent.h>
+#include <memory>
 #include <vector>
 #include <queue>
 #include <cmath>

@@ -21,6 +21,7 @@ inline constexpr uint16_t protocol_eng_error{ 0x105 };
 inline constexpr uint16_t rfid{ 0x1f4 };
 inline constexpr uint16_t tpl_config{ 0x13D };
 inline constexpr uint16_t tpl_response{ 0x13E };
+inline constexpr uint16_t tpl_feedback{ 0x13F };
 }  // namespace MobileAppCanFrameId
 
 namespace MobileAppRfid
@@ -45,6 +46,13 @@ namespace MobileAppTpl
 inline constexpr uint8_t config_id_byte{ 0 };
 inline constexpr uint8_t ret_code_byte{ 1 };
 inline constexpr uint8_t tpl_resp_frame_len{ 2 };
+
+enum feedback_byte
+{
+  first = 1,
+  zero = 2
+};
+
 }  // namespace MobileAppTpl
 
 // TODO(all): encapsulate in namespaces/enums

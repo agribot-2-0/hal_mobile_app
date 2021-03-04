@@ -5,7 +5,6 @@
 #pragma once
 
 #include <hal_mobile_app/TplConfigHandle/TplConfigHandle.h>
-#include <hal_mobile_app/TplFeedback/TplFeedback.h>
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/ToolManagerScan.h>
 #include <agribot_common/CanBus/ICan.h>
@@ -148,7 +147,14 @@ class MobileAppHandler : public AgribotComponent
   tool_manager::TplConfig getTplConfig(const TplConfig::SelectedTpl tpl);
   void sendTplResponseFrame(const uint8_t ret_code, const uint8_t id);
 
-  //tpl feedback:
-  std::vector<std::uint8_t> prepareTplFeedbackFrame(const tool_manager::TplConfig& feedback);
-  void sendTplFeedbackFrame(const TplConfig::SelectedTpl tpl, const std::vector<std::uint8_t>& frame);
+  // tpl feedback:
+  std::vector<std::uint8_t> makeTwoBytesVector(std::uint16_t value);
+  std::vector<std::uint8_t> preparePtoData(const tool_manager::TplConfig& feedback);
+  std::vector<std::uint8_t> prepareRedQcfData(const tool_manager::TplConfig& feedback);
+  std::vector<std::uint8_t> prepareGreenQcfData(const tool_manager::TplConfig& feedback);
+  std::vector<std::uint8_t> prepareBlueQcfData(const tool_manager::TplConfig& feedback);
+  std::vector<std::uint8_t> prepareAngleData(const tool_manager::TplConfig& feedback);
+  std::vector<std::uint8_t> prepareHeightData(const tool_manager::TplConfig& feedback);
+  std::vector<std::vector<std::uint8_t>> prepareTplFeedbackFrames(const tool_manager::TplConfig& feedback);
+  void sendTplFeedbackFrames(const TplConfig::SelectedTpl tpl, const std::vector<std::vector<std::uint8_t>>& frame);
 };

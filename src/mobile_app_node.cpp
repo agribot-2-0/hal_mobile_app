@@ -37,21 +37,20 @@ void vAppTaskChoosedEventCallback(const std_msgs::String::ConstPtr& ptrMsg)
 
 tool_manager::TplConfig tplMsgToStruct(const agribot_msgs::AgribotTool& msg)
 {
-
 }
 
 void frontToolFeedbackCallback(const agribot_msgs::AgribotTool& msg)
 {
-  std::vector<std::uint8_t> frame_data;
-  frame_data = CommHandlerControl.prepareTplFeedbackFrame(tplMsgToStruct(msg));
-  CommHandlerControl.sendTplFeedbackFrame(TplConfig::SelectedTpl::front, frame_data);
+  std::vector<std::vector<std::uint8_t>> frames_data;
+  frames_data = CommHandlerControl.prepareTplFeedbackFrames(tplMsgToStruct(msg));
+  CommHandlerControl.sendTplFeedbackFrames(TplConfig::SelectedTpl::front, frames_data);
 }
 
 void backToolFeedbackCallback(const agribot_msgs::AgribotTool& msg)
 {
-  std::vector<std::uint8_t> frame_data;
-  frame_data = CommHandlerControl.prepareTplFeedbackFrame(tplMsgToStruct(msg));
-  CommHandlerControl.sendTplFeedbackFrame(TplConfig::SelectedTpl::back, frame_data);
+  std::vector<std::vector<std::uint8_t>> frames_data;
+  frames_data = CommHandlerControl.prepareTplFeedbackFrames(tplMsgToStruct(msg));
+  CommHandlerControl.sendTplFeedbackFrames(TplConfig::SelectedTpl::back, frames_data);
 }
 
 void vFillTheMessageObject(agribot_msgs::AgribotMobileAppFrame* ptrFrameMsg, uint uCanID, uint8_t* u8MsgBytes)

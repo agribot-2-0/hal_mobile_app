@@ -36,4 +36,11 @@ enum class SelectedTpl
   front,
   back
 };
+
+constexpr std::uint8_t front_config_start_id = 1;
+constexpr std::uint8_t back_config_start_id = 7;
+
+inline constexpr uint16_t angle_mask{ 0x8000 };
+inline constexpr uint16_t encode_constant { 1000 };
+
 }  // namespace TplConfig

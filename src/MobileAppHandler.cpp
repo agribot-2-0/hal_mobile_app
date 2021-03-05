@@ -518,8 +518,7 @@ void MobileAppHandler::sendTplResponseFrame(const uint8_t ret, const uint8_t id)
 // tpl feedback:
 std::vector<std::uint8_t> MobileAppHandler::makeTwoBytesVector(std::uint16_t value)
 {
-  return {static_cast<std::uint8_t>(value >> 8),
-          static_cast<std::uint8_t>(value)};
+  return { static_cast<std::uint8_t>(value >> 8), static_cast<std::uint8_t>(value) };
 }
 
 std::vector<std::uint8_t> MobileAppHandler::preparePtoData(const tool_manager::TplConfig& feedback)
@@ -527,19 +526,20 @@ std::vector<std::uint8_t> MobileAppHandler::preparePtoData(const tool_manager::T
   return makeTwoBytesVector(static_cast<uint16_t>(feedback.pto_rpm));
 }
 
-std::vector<std::uint8_t> MobileAppHandler::prepareRedQcfData(const tool_manager::TplConfig& feedback)
+std::vector<std::uint8_t> MobileAppHandler::prepareQcfData(const tool_manager::TplConfig& feedback,
+                                                           TplConfig::ValveColor selection)
 {
-  return makeTwoBytesVector(static_cast<uint16_t>(feedback.red_valve_flow));
-}
-
-std::vector<std::uint8_t> MobileAppHandler::prepareGreenQcfData(const tool_manager::TplConfig& feedback)
-{
-  return makeTwoBytesVector(static_cast<uint16_t>(feedback.green_valve_flow));
-}
-
-std::vector<std::uint8_t> MobileAppHandler::prepareBlueQcfData(const tool_manager::TplConfig& feedback)
-{
-  return makeTwoBytesVector(static_cast<uint16_t>(feedback.blue_valve_flow));
+  switch (selection)
+  {
+    case TplConfig::ValveColor::red:
+      return makeTwoBytesVector(static_cast<uint16_t>(feedback.red_valve_flow));
+    case TplConfig::ValveColor::green:
+      return makeTwoBytesVector(static_cast<uint16_t>(feedback.green_valve_flow));
+    case TplConfig::ValveColor::blue:
+      return makeTwoBytesVector(static_cast<uint16_t>(feedback.blue_valve_flow));
+    default:
+      return {};
+  }
 }
 
 std::vector<std::uint8_t> MobileAppHandler::prepareAngleData(const tool_manager::TplConfig& feedback)
@@ -548,7 +548,7 @@ std::vector<std::uint8_t> MobileAppHandler::prepareAngleData(const tool_manager:
   uint16_t processed_angle = abs(feedback.tpl_angle) * TplConfig::encode_constant;
   if (negative)
   {
-    processed_angle |= TplConfig::angle_mask;
+    processed_angle |= TplConfig::negative_sign_mask;
   }
   return makeTwoBytesVector(static_cast<uint16_t>(processed_angle));
 }
@@ -558,29 +558,32 @@ std::vector<std::uint8_t> MobileAppHandler::prepareHeightData(const tool_manager
   return makeTwoBytesVector(static_cast<uint16_t>(feedback.tpl_height * TplConfig::encode_constant));
 }
 
-std::vector<std::vector<std::uint8_t>> MobileAppHandler::prepareTplFeedbackFrames(const tool_manager::TplConfig& feedback)
+std::vector<std::vector<std::uint8_t>>
+MobileAppHandler::prepareTplFeedbackFrames(const tool_manager::TplConfig& feedback)
 {
   std::vector<std::vector<std::uint8_t>> frames_data;
   frames_data.push_back(preparePtoData(feedback));
-  frames_data.push_back(prepareRedQcfData(feedback));
-  frames_data.push_back(prepareGreenQcfData(feedback));
-  frames_data.push_back(prepareBlueQcfData(feedback));
+  frames_data.push_back(prepareQcfData(feedback, TplConfig::ValveColor::red));
+  frames_data.push_back(prepareQcfData(feedback, TplConfig::ValveColor::green));
+  frames_data.push_back(prepareQcfData(feedback, TplConfig::ValveColor::blue));
   frames_data.push_back(prepareAngleData(feedback));
   frames_data.push_back(prepareHeightData(feedback));
   return frames_data;
 }
 
-void MobileAppHandler::sendTplFeedbackFrames(const TplConfig::SelectedTpl tpl, const std::vector<std::vector<std::uint8_t>>& frames_data)
+void MobileAppHandler::sendTplFeedbackFrames(const TplConfig::SelectedTpl tpl,
+                                             const std::vector<std::vector<std::uint8_t>>& frames_data)
 {
-  std::uint8_t config_id = (tpl == TplConfig::SelectedTpl::front) ? TplConfig::front_config_start_id : TplConfig::back_config_start_id;
+  std::uint8_t config_id =
+      (tpl == TplConfig::SelectedTpl::front) ? TplConfig::front_config_start_id : TplConfig::back_config_start_id;
   for (auto data : frames_data)
   {
     can_frame message;
     message.can_id = MobileAppCanFrameId::tpl_feedback;
-    message.can_dlc = data.size();
+    message.can_dlc = TplConfig::feedback_frame_size;
     message.data[MobileAppTpl::config_id_byte] = config_id;
-    message.data[MobileAppTpl::feedback_byte::first] = data[MobileAppTpl::feedback_byte::first];
-    message.data[MobileAppTpl::feedback_byte::zero] = data[MobileAppTpl::feedback_byte::zero];
+    message.data[MobileAppTpl::feedback_byte::first_frame] = data[MobileAppTpl::feedback_byte::first_vector];
+    message.data[MobileAppTpl::feedback_byte::zero_frame] = data[MobileAppTpl::feedback_byte::zero_vector];
     ++config_id;
     can_handler_->iSendFrame(&message, false);
   }

@@ -150,9 +150,7 @@ class MobileAppHandler : public AgribotComponent
   // tpl feedback:
   std::vector<std::uint8_t> makeTwoBytesVector(std::uint16_t value);
   std::vector<std::uint8_t> preparePtoData(const tool_manager::TplConfig& feedback);
-  std::vector<std::uint8_t> prepareRedQcfData(const tool_manager::TplConfig& feedback);
-  std::vector<std::uint8_t> prepareGreenQcfData(const tool_manager::TplConfig& feedback);
-  std::vector<std::uint8_t> prepareBlueQcfData(const tool_manager::TplConfig& feedback);
+  std::vector<std::uint8_t> prepareQcfData(const tool_manager::TplConfig& feedback, TplConfig::ValveColor selection);
   std::vector<std::uint8_t> prepareAngleData(const tool_manager::TplConfig& feedback);
   std::vector<std::uint8_t> prepareHeightData(const tool_manager::TplConfig& feedback);
   std::vector<std::vector<std::uint8_t>> prepareTplFeedbackFrames(const tool_manager::TplConfig& feedback);

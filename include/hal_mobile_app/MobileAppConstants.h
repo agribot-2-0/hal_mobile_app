@@ -49,8 +49,10 @@ inline constexpr uint8_t tpl_resp_frame_len{ 2 };
 
 enum feedback_byte
 {
-  first = 1,
-  zero = 2
+  first_vector = 0,
+  zero_vector = 1,
+  first_frame = 1,
+  zero_frame = 2
 };
 
 }  // namespace MobileAppTpl

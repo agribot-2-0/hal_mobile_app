@@ -37,6 +37,14 @@ void vAppTaskChoosedEventCallback(const std_msgs::String::ConstPtr& ptrMsg)
 
 tool_manager::TplConfig tplMsgToStruct(const agribot_msgs::AgribotTool& msg)
 {
+  tool_manager::TplConfig feedback;
+  feedback.pto_rpm = msg.pto_rpm;
+  feedback.red_valve_flow = msg.red_valve_flow;
+  feedback.green_valve_flow = msg.green_valve_flow;
+  feedback.blue_valve_flow = msg.blue_valve_flow;
+  feedback.tpl_angle = msg.tpl_angle;
+  feedback.tpl_height = msg.tpl_height;
+  return feedback;
 }
 
 void frontToolFeedbackCallback(const agribot_msgs::AgribotTool& msg)

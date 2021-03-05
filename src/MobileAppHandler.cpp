@@ -586,5 +586,6 @@ void MobileAppHandler::sendTplFeedbackFrames(const TplConfig::SelectedTpl tpl,
     message.data[MobileAppTpl::feedback_byte::zero_frame] = data[MobileAppTpl::feedback_byte::zero_vector];
     ++config_id;
     can_handler_->iSendFrame(&message, false);
+    usleep(MobileAppRfid::frame_send_delay);
   }
 }

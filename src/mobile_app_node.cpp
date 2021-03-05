@@ -334,7 +334,7 @@ int main(int argc, char** argv)
     {
       callRfidScanSrv(rfid_tags_scanner_client, rfid_tags_scanner_srv, rfid_tags_scanner_srv.request.SCAN_BACK);
     }
-    // Tool contro publish:
+    // Tool control publish:
     front_tpl_config_publisher.publish(
         tplConfigToToolMsg(CommHandlerControl.getTplConfig(TplConfig::SelectedTpl::front)));
     back_tpl_config_publisher.publish(

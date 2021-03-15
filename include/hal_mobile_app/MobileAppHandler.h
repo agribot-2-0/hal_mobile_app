@@ -148,6 +148,7 @@ class MobileAppHandler : public AgribotComponent
   void sendTplResponseFrame(const uint8_t ret_code, const uint8_t id);
 
   // tpl feedback:
+  // TODO(mwiadoms): change the way of assembling and sending can messages
   std::vector<std::uint8_t> makeTwoBytesVector(std::uint16_t value);
   std::vector<std::uint8_t> preparePtoData(const tool_manager::TplConfig& feedback);
   std::vector<std::uint8_t> prepareQcfData(const tool_manager::TplConfig& feedback, TplConfig::ValveColor selection);

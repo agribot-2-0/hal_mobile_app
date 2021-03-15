@@ -6,11 +6,8 @@
 #include <hal_mobile_app/MobileAppConstants.h>
 #include <iostream>
 
-MobileAppHandler::MobileAppHandler(const char* pchCanChannel)
+MobileAppHandler::MobileAppHandler()
 {
-  char char_conversion[4];
-  strncpy(char_conversion, pchCanChannel, sizeof char_conversion);
-  CanHandler.iInitialize(char_conversion);
   bSendToController = false;
   bArcFreshData = false;
   dRadius = 0;
@@ -42,10 +39,15 @@ MobileAppHandler::MobileAppHandler(const char* pchCanChannel)
   LampState = 0;
 }
 
+void MobileAppHandler::initializeCanHandler(std::unique_ptr<ICan> can_handler)
+{
+  can_handler_ = std::move(can_handler);
+}
+
 void MobileAppHandler::vReceiveCanFrames()
 {
   can_frame message;
-  while (CanHandler.bReceiveFrame(&message))
+  while (can_handler_->bReceiveFrame(&message))
   {
     FramesQueue.push(message);
   }
@@ -168,7 +170,7 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
     }
     else if (isTplPositionChangeRequested(message))
     {
-      if (setTplConfig(CanHandler.getMostRecentCanFrame()))
+      if (setTplConfig(can_handler_->getMostRecentCanFrame()))
       {
         sendTplResponseFrame(TplReturnCode::success, message.data[MobileAppTpl::config_id_byte]);
       }
@@ -411,7 +413,7 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
   {
     setRfidFrameHeader(message, MobileAppRfid::tag_start_frame_size, com, sel_ant, ids.size());
     usleep(MobileAppRfid::frame_send_delay);
-    CanHandler.iSendFrame(&message, false);
+    can_handler_->iSendFrame(&message, false);
   }
   for (const auto& tag_id : ids)
   {
@@ -421,7 +423,7 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
     message.can_id = MobileAppCanFrameId::rfid;
     setRfidFrameHeader(message, MobileAppRfid::tag_start_frame_size, com, sel_ant, tag_id.size());
     usleep(MobileAppRfid::frame_send_delay);
-    CanHandler.iSendFrame(&message, false);
+    can_handler_->iSendFrame(&message, false);
     bzero(message.data, sizeof(uint8_t) * (MobileAppRfid::tag_data_frame_size));
     message.can_dlc = MobileAppRfid::tag_data_frame_size;
     // EPC bytes transsmision: (com 3 and higher)
@@ -435,7 +437,7 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
         ++com;  //  increment com byte
         message.data[MobileAppRfid::com_byte] = com;
         usleep(MobileAppRfid::frame_send_delay);
-        CanHandler.iSendFrame(&message, false);
+        can_handler_->iSendFrame(&message, false);
         bzero(message.data, sizeof(uint8_t) * MobileAppRfid::tag_data_frame_size);
         ++cnt;
       }
@@ -445,7 +447,7 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
       ++com;  //  increment com byte
       message.data[MobileAppRfid::com_byte] = com;
       usleep(MobileAppRfid::frame_send_delay);
-      CanHandler.iSendFrame(&message, false);
+      can_handler_->iSendFrame(&message, false);
     }
   }
 }
@@ -510,5 +512,79 @@ void MobileAppHandler::sendTplResponseFrame(const uint8_t ret, const uint8_t id)
   message.can_dlc = MobileAppTpl::tpl_resp_frame_len;
   message.data[MobileAppTpl::config_id_byte] = id;
   message.data[MobileAppTpl::ret_code_byte] = static_cast<uint8_t>(ret);
-  CanHandler.iSendFrame(&message, false);
+  can_handler_->iSendFrame(&message, false);
+}
+
+// tpl feedback:
+std::vector<std::uint8_t> MobileAppHandler::makeTwoBytesVector(std::uint16_t value)
+{
+  return { static_cast<std::uint8_t>(value >> 8), static_cast<std::uint8_t>(value) };
+}
+
+std::vector<std::uint8_t> MobileAppHandler::preparePtoData(const tool_manager::TplConfig& feedback)
+{
+  return makeTwoBytesVector(static_cast<uint16_t>(feedback.pto_rpm));
+}
+
+std::vector<std::uint8_t> MobileAppHandler::prepareQcfData(const tool_manager::TplConfig& feedback,
+                                                           TplConfig::ValveColor selection)
+{
+  switch (selection)
+  {
+    case TplConfig::ValveColor::red:
+      return makeTwoBytesVector(static_cast<uint16_t>(feedback.red_valve_flow));
+    case TplConfig::ValveColor::green:
+      return makeTwoBytesVector(static_cast<uint16_t>(feedback.green_valve_flow));
+    case TplConfig::ValveColor::blue:
+      return makeTwoBytesVector(static_cast<uint16_t>(feedback.blue_valve_flow));
+    default:
+      return {};
+  }
+}
+
+std::vector<std::uint8_t> MobileAppHandler::prepareAngleData(const tool_manager::TplConfig& feedback)
+{
+  uint16_t processed_angle = abs(feedback.tpl_angle) * TplConfig::encode_constant;
+  if (feedback.tpl_angle < 0)
+  {
+    processed_angle |= TplConfig::negative_sign_mask;
+  }
+  return makeTwoBytesVector(static_cast<uint16_t>(processed_angle));
+}
+
+std::vector<std::uint8_t> MobileAppHandler::prepareHeightData(const tool_manager::TplConfig& feedback)
+{
+  return makeTwoBytesVector(static_cast<uint16_t>(feedback.tpl_height * TplConfig::encode_constant));
+}
+
+std::vector<std::vector<std::uint8_t>>
+MobileAppHandler::prepareTplFeedbackFrames(const tool_manager::TplConfig& feedback)
+{
+  std::vector<std::vector<std::uint8_t>> frames_data;
+  frames_data.push_back(preparePtoData(feedback));
+  frames_data.push_back(prepareQcfData(feedback, TplConfig::ValveColor::red));
+  frames_data.push_back(prepareQcfData(feedback, TplConfig::ValveColor::green));
+  frames_data.push_back(prepareQcfData(feedback, TplConfig::ValveColor::blue));
+  frames_data.push_back(prepareAngleData(feedback));
+  frames_data.push_back(prepareHeightData(feedback));
+  return frames_data;
+}
+
+void MobileAppHandler::sendTplFeedbackFrames(const TplConfig::SelectedTpl tpl,
+                                             const std::vector<std::vector<std::uint8_t>>& frames_data)
+{
+  std::uint8_t config_id =
+      (tpl == TplConfig::SelectedTpl::front) ? TplConfig::front_config_start_id : TplConfig::back_config_start_id;
+  for (const auto& data : frames_data)
+  {
+    can_frame message;
+    message.can_id = MobileAppCanFrameId::tpl_feedback;
+    message.can_dlc = TplConfig::feedback_frame_size;
+    message.data[MobileAppTpl::config_id_byte] = config_id;
+    message.data[MobileAppTpl::feedback_byte::first_frame] = data[MobileAppTpl::feedback_byte::first_vector];
+    message.data[MobileAppTpl::feedback_byte::zero_frame] = data[MobileAppTpl::feedback_byte::zero_vector];
+    ++config_id;
+    can_handler_->iSendFrame(&message, false);
+    usleep(MobileAppRfid::frame_send_delay);
+  }
 }

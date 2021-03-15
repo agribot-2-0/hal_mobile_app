@@ -7,8 +7,10 @@
 #include <hal_mobile_app/TplConfigHandle/TplConfigHandle.h>
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/ToolManagerScan.h>
+#include <agribot_common/CanBus/ICan.h>
 #include <agribot_common/Can.h>
 #include <agribot_common/AgribotComponent.h>
+#include <memory>
 #include <vector>
 #include <queue>
 #include <cmath>
@@ -27,7 +29,7 @@
 
 class MobileAppHandler : public AgribotComponent
 {
-  Can CanHandler;
+  std::unique_ptr<ICan> can_handler_;
   std::queue<can_frame> FramesQueue;
   bool bSendToController = false;
   bool bArcFreshData = false;
@@ -90,8 +92,9 @@ class MobileAppHandler : public AgribotComponent
   float fBackAngular;
 
  public:
-  explicit MobileAppHandler(const char* pchCanChannel);
+  MobileAppHandler();
   ~MobileAppHandler();
+  void initializeCanHandler(std::unique_ptr<ICan> can_handler);
   void vReceiveCanFrames();
   bool bCheckByte(uint8_t frame_byte, uint8_t expected_data);
   bool bRfidIsAntSelected(const can_frame& msg, uint8_t sel_ant);
@@ -143,4 +146,14 @@ class MobileAppHandler : public AgribotComponent
   bool setTplConfig(const CanFrame& frame);
   tool_manager::TplConfig getTplConfig(const TplConfig::SelectedTpl tpl);
   void sendTplResponseFrame(const uint8_t ret_code, const uint8_t id);
+
+  // tpl feedback:
+  // TODO(mwiadoms): change the way of assembling and sending can messages
+  std::vector<std::uint8_t> makeTwoBytesVector(std::uint16_t value);
+  std::vector<std::uint8_t> preparePtoData(const tool_manager::TplConfig& feedback);
+  std::vector<std::uint8_t> prepareQcfData(const tool_manager::TplConfig& feedback, TplConfig::ValveColor selection);
+  std::vector<std::uint8_t> prepareAngleData(const tool_manager::TplConfig& feedback);
+  std::vector<std::uint8_t> prepareHeightData(const tool_manager::TplConfig& feedback);
+  std::vector<std::vector<std::uint8_t>> prepareTplFeedbackFrames(const tool_manager::TplConfig& feedback);
+  void sendTplFeedbackFrames(const TplConfig::SelectedTpl tpl, const std::vector<std::vector<std::uint8_t>>& frame);
 };

@@ -4,6 +4,7 @@
 
 #include <ros/ros.h>
 #include <ros/console.h>
+#include <agribot_common/CommonFunctions/ros_common_functions.h>
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/AgribotManualControl.h>
 #include <agribot_msgs/AgribotAppErrorFlag.h>
@@ -17,9 +18,7 @@
 
 #define HEADER_STRING_MOB_APP_FRAME "mobile_app_commands_link"
 
-const char cestrUsedCAN[] = "can1";
-
-MobileAppHandler CommHandlerControl(cestrUsedCAN);
+MobileAppHandler CommHandlerControl;
 
 void synchro_callback(const ros::TimerEvent& event)
 {
@@ -34,6 +33,32 @@ void vAppCommandsSimulationEventsCallback(const agribot_msgs::AgribotMobileAppFr
 void vAppTaskChoosedEventCallback(const std_msgs::String::ConstPtr& ptrMsg)
 {
   CommHandlerControl.vSetChosenTask(ptrMsg->data);
+}
+
+tool_manager::TplConfig tplMsgToStruct(const agribot_msgs::AgribotTool& msg)
+{
+  tool_manager::TplConfig feedback;
+  feedback.pto_rpm = msg.pto_rpm;
+  feedback.red_valve_flow = msg.red_valve_flow;
+  feedback.green_valve_flow = msg.green_valve_flow;
+  feedback.blue_valve_flow = msg.blue_valve_flow;
+  feedback.tpl_angle = msg.tpl_angle;
+  feedback.tpl_height = msg.tpl_height;
+  return feedback;
+}
+
+void frontToolFeedbackCallback(const agribot_msgs::AgribotTool& msg)
+{
+  std::vector<std::vector<std::uint8_t>> frames_data;
+  frames_data = CommHandlerControl.prepareTplFeedbackFrames(tplMsgToStruct(msg));
+  CommHandlerControl.sendTplFeedbackFrames(TplConfig::SelectedTpl::front, frames_data);
+}
+
+void backToolFeedbackCallback(const agribot_msgs::AgribotTool& msg)
+{
+  std::vector<std::vector<std::uint8_t>> frames_data;
+  frames_data = CommHandlerControl.prepareTplFeedbackFrames(tplMsgToStruct(msg));
+  CommHandlerControl.sendTplFeedbackFrames(TplConfig::SelectedTpl::back, frames_data);
 }
 
 void vFillTheMessageObject(agribot_msgs::AgribotMobileAppFrame* ptrFrameMsg, uint uCanID, uint8_t* u8MsgBytes)
@@ -99,6 +124,20 @@ int main(int argc, char** argv)
       bSimulation = false;
     }
   }
+
+  std::string selected_can;
+  try
+  {
+    selected_can = ros_common_functions::getRosParam<std::string>("/hal_mobile_app/can_bus_name");
+  }
+  catch (const std::string& ex)
+  {
+    ROS_ERROR_STREAM("[HalMobileApp] " + ex);
+    ros::shutdown();
+  }
+  std::unique_ptr<Can> can_handler = std::make_unique<Can>();
+  can_handler->iInitialize(selected_can.c_str());
+  CommHandlerControl.initializeCanHandler(std::move(can_handler));
   // Use this topic to communicate application events
   // with the robot state machine
   ros::Publisher StateMachinePub =
@@ -112,6 +151,10 @@ int main(int argc, char** argv)
       nh.advertise<agribot_msgs::AgribotAppErrorFlag>("/agribot/state_machine/error", 2);
   // Topic used to read the path name from task config file
   ros::Subscriber AppTaskChoosedEventsSub = nh.subscribe("/agribot/chosen_task_name", 1, vAppTaskChoosedEventCallback);
+  // Topic for feedback from front TPL:
+  ros::Subscriber tpl_front_sub = nh.subscribe("/agribot/encoder/tool/front", 1, frontToolFeedbackCallback);
+  // Topic for feedback from back TPL:
+  ros::Subscriber tpl_back_sub = nh.subscribe("/agribot/encoder/tool/back", 1, backToolFeedbackCallback);
   // Topic used to read the path name from task config file
   ros::Publisher StateMachineTaskPub = nh.advertise<std_msgs::String>("/agribot/state_machine/task", 1);
   // The client of scan tags service
@@ -291,6 +334,7 @@ int main(int argc, char** argv)
     {
       callRfidScanSrv(rfid_tags_scanner_client, rfid_tags_scanner_srv, rfid_tags_scanner_srv.request.SCAN_BACK);
     }
+    // Tool control publish:
     front_tpl_config_publisher.publish(
         tplConfigToToolMsg(CommHandlerControl.getTplConfig(TplConfig::SelectedTpl::front)));
     back_tpl_config_publisher.publish(

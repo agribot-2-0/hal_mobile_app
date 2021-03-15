@@ -37,12 +37,12 @@ enum class SelectedTpl
   back
 };
 
-constexpr std::uint8_t feedback_frame_size = 3;
+inline constexpr std::uint8_t feedback_frame_size = 3;
 
-constexpr std::uint8_t front_config_start_id = 1;
-constexpr std::uint8_t back_config_start_id = 7;
+inline constexpr std::uint8_t front_config_start_id = 1;
+inline constexpr std::uint8_t back_config_start_id = 7;
 
-inline constexpr uint16_t negative_sign_mask{ 0x8000 };
-inline constexpr uint16_t encode_constant { 1000 };
+inline constexpr std::uint16_t negative_sign_mask{ 0x8000 };
+inline constexpr std::uint16_t encode_constant { 1000 };
 
 }  // namespace TplConfig

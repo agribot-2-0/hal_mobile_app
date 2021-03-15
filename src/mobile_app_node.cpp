@@ -132,7 +132,7 @@ int main(int argc, char** argv)
   }
   catch (const std::string& ex)
   {
-    ROS_ERROR_STREAM("[HAL_MOBILE_APP] " + ex);
+    ROS_ERROR_STREAM("[HalMobileApp] " + ex);
     ros::shutdown();
   }
   std::unique_ptr<Can> can_handler = std::make_unique<Can>();

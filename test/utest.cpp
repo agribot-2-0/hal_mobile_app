@@ -29,13 +29,14 @@ double decodeTplAngle(std::vector<std::uint8_t> angle)
   std::int16_t sign = getAngleSign(preprocessed_angle);
   preprocessed_angle &= ~(TplConfig::negative_sign_mask);
 
-  return static_cast<double>(preprocessed_angle) * sign / TplConfig::encode_constant;
+  return static_cast<double>(preprocessed_angle) * static_cast<double>(sign) /
+         static_cast<double>(TplConfig::encode_constant);
 }
 
 double decodeTplHeight(std::vector<std::uint8_t> height)
 {
   int16_t preprocessed_height = CanHelperFunctions::getI16Msbf(MobileAppTpl::feedback_byte::first_vector, height);
-  return static_cast<double>(preprocessed_height) / TplConfig::encode_constant;
+  return static_cast<double>(preprocessed_height) / static_cast<double>(TplConfig::encode_constant);
 }
 
 TEST(TestTplFeedbackFrame, preparePtoData__When_prepare_pto_frame_data__Return_correctly_encoded_vector)

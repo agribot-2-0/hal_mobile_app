@@ -544,9 +544,8 @@ std::vector<std::uint8_t> MobileAppHandler::prepareQcfData(const tool_manager::T
 
 std::vector<std::uint8_t> MobileAppHandler::prepareAngleData(const tool_manager::TplConfig& feedback)
 {
-  bool negative = (feedback.tpl_angle < 0) ? true : false;
   uint16_t processed_angle = abs(feedback.tpl_angle) * TplConfig::encode_constant;
-  if (negative)
+  if (feedback.tpl_angle < 0)
   {
     processed_angle |= TplConfig::negative_sign_mask;
   }
@@ -576,7 +575,7 @@ void MobileAppHandler::sendTplFeedbackFrames(const TplConfig::SelectedTpl tpl,
 {
   std::uint8_t config_id =
       (tpl == TplConfig::SelectedTpl::front) ? TplConfig::front_config_start_id : TplConfig::back_config_start_id;
-  for (auto data : frames_data)
+  for (const auto& data : frames_data)
   {
     can_frame message;
     message.can_id = MobileAppCanFrameId::tpl_feedback;

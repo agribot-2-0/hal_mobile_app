@@ -186,7 +186,6 @@ int main(int argc, char** argv)
   // for instant sending of the default configuration
   // without the option to choose
   std_msgs::String task_name;
-  bool latching_configuration = false;
   uint8_t u8MsgBytes[8];
   uint uCanID = 0;
   uint16_t u16Status = 0x00;
@@ -243,23 +242,13 @@ int main(int argc, char** argv)
         vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
         StateMachinePub.publish(FrameMsg);
       }
-      if ((u16Status & RECEIVED_AUTO_STEERING) == RECEIVED_AUTO_STEERING || latching_configuration)
+      if ((u16Status & RECEIVED_AUTO_STEERING) == RECEIVED_AUTO_STEERING )
       {
-        if (!latching_configuration)
-        {
-          task_name.data = "test_task_drzewna";
-          StateMachineTaskPub.publish(task_name);
-          latching_configuration = true;
-        }
-        else
-        {
-          RobMode.val = RobMode.AUTO;
-          StateMachineModePub.publish(RobMode);
-          CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_AUTO_STEERING);
-          vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-          StateMachinePub.publish(FrameMsg);
-          latching_configuration = false;
-        }
+        RobMode.val = RobMode.AUTO;
+        StateMachineModePub.publish(RobMode);
+        CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_AUTO_STEERING);
+        vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
+        StateMachinePub.publish(FrameMsg);
       }
       if ((u16Status & RECEIVED_PROTOCOL_ERROR) == RECEIVED_PROTOCOL_ERROR)
       {

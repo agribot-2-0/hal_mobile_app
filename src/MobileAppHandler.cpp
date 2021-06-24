@@ -2,8 +2,9 @@
  * Copyright (C) 2020 Agribot. All rights reserved.
  */
 
-#include <hal_mobile_app/MobileAppHandler.h>
 #include <hal_mobile_app/MobileAppConstants.h>
+#include <hal_mobile_app/MobileAppHandler.h>
+
 #include <iostream>
 
 MobileAppHandler::MobileAppHandler()
@@ -170,7 +171,9 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
     }
     else if (isTplPositionChangeRequested(message))
     {
-      if (setTplConfig(can_handler_->getMostRecentCanFrame()))
+      CanFrame frame;
+      frame.setupFrame(message);
+      if (setTplConfig(frame))
       {
         sendTplResponseFrame(TplReturnCode::success, message.data[MobileAppTpl::config_id_byte]);
       }

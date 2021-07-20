@@ -22,8 +22,8 @@ inline constexpr uint16_t rfid{ 0x1f4 };
 inline constexpr uint16_t tpl_config{ 0x13D };
 inline constexpr uint16_t tpl_response{ 0x13E };
 inline constexpr uint16_t tpl_feedback{ 0x13F };
-inline constexpr uint16_t change_delta_geometry_front{ 0x123 };
-inline constexpr uint16_t change_delta_geometry_back{ 0x124 };
+inline constexpr uint16_t change_delta_geometry_front{ 0x1f5 };
+inline constexpr uint16_t change_delta_geometry_back{ 0x1f6 };
 }  // namespace MobileAppCanFrameId
 
 namespace MobileAppRfid

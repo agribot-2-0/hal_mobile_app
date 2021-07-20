@@ -161,33 +161,19 @@ int main(int argc, char** argv)
   // Topic used to read the path name from task config file
   ros::Publisher StateMachineTaskPub = nh.advertise<std_msgs::String>("/agribot/state_machine/task", 1);
   // The client of scan tags service
-  ros::ServiceClient rfid_tags_scanner_client = nh.serviceClient<agribot_msgs::ToolManagerScan>("agribot/"
-                                                                                                "tool_management/scan");
+  ros::ServiceClient rfid_tags_scanner_client =
+      nh.serviceClient<agribot_msgs::ToolManagerScan>("agribot/tool_management/scan");
   agribot_msgs::ToolManagerScan rfid_tags_scanner_srv;
   // Tpl config publishers
   ros::Publisher front_tpl_config_publisher =
       nh.advertise<agribot_msgs::AgribotTool>("/agribot/control/tool/front/manual", 1);
   ros::Publisher back_tpl_config_publisher =
       nh.advertise<agribot_msgs::AgribotTool>("/agribot/control/tool/back/manual", 1);
-  ros::ServiceClient change_delta_geometry_front_client = nh.serviceClient<agribot_msgs::ChangeDeltasGeometry>("/agribo"
-                                                                                                               "t/cart/"
-                                                                                                               "caterpi"
-                                                                                                               "llar/"
-                                                                                                               "front/"
-                                                                                                               "change_"
-                                                                                                               "deltas_"
-                                                                                                               "geometr"
-                                                                                                               "y");
+  ros::ServiceClient change_delta_geometry_front_client =
+      nh.serviceClient<agribot_msgs::ChangeDeltasGeometry>("/agribot/cart/caterpillar/front/change_deltas_geometry");
 
-  ros::ServiceClient change_delta_geometry_back_client = nh.serviceClient<agribot_msgs::ChangeDeltasGeometry>("/agribo"
-                                                                                                              "t/cart/"
-                                                                                                              "caterpi"
-                                                                                                              "llar/"
-                                                                                                              "back/"
-                                                                                                              "change_"
-                                                                                                              "deltas_"
-                                                                                                              "geometr"
-                                                                                                              "y");
+  ros::ServiceClient change_delta_geometry_back_client =
+      nh.serviceClient<agribot_msgs::ChangeDeltasGeometry>("/agribot/cart/caterpillar/back/change_deltas_geometry");
 
   if (bSimulation == true)
   {

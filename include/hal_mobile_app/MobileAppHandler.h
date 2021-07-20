@@ -4,18 +4,19 @@
 
 #pragma once
 
-#include <hal_mobile_app/TplConfigHandle/TplConfigHandle.h>
+#include <agribot_common/AgribotComponent.h>
+#include <agribot_common/Can.h>
+#include <agribot_common/CanBus/ICan.h>
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/ToolManagerScan.h>
-#include <agribot_common/CanBus/ICan.h>
-#include <agribot_common/Can.h>
-#include <agribot_common/AgribotComponent.h>
-#include <memory>
-#include <vector>
-#include <queue>
-#include <cmath>
-#include <string>
+#include <hal_mobile_app/TplConfigHandle/TplConfigHandle.h>
+
 #include <boost/array.hpp>
+#include <cmath>
+#include <memory>
+#include <queue>
+#include <string>
+#include <vector>
 
 #define RECEIVED_HANDSHAKE 0x0001
 #define RECEIVED_HEARTBEAT 0x0002
@@ -26,6 +27,8 @@
 #define RECEIVED_MANUALSTEERING_ERROR 0x0040
 #define RECEIVED_ENG_ERROR_START 0x0100
 #define RECEIVED_ENG_ERROR 0x0200
+#define RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT 0x0005
+#define RECEIVED_CHANGE_DELTA_GEOMETRY_BACK 0x0006
 
 class MobileAppHandler : public AgribotComponent
 {
@@ -33,6 +36,8 @@ class MobileAppHandler : public AgribotComponent
   std::queue<can_frame> FramesQueue;
   bool bSendToController = false;
   bool bArcFreshData = false;
+  bool bChangeDeltaGeometryUpFront = false;
+  bool bChangeDeltaGeometryUpBack = false;
   double dManualLinearVelo = 0;
   double dRadius = 0;
   std::queue<uint8_t> ProtocolErrorTypeQueue;
@@ -91,7 +96,7 @@ class MobileAppHandler : public AgribotComponent
   float fBackLinear;
   float fBackAngular;
 
- public:
+public:
   MobileAppHandler();
   ~MobileAppHandler();
   void initializeCanHandler(std::unique_ptr<ICan> can_handler);
@@ -101,6 +106,10 @@ class MobileAppHandler : public AgribotComponent
   uint16_t u16ParseCanFrames();
   float fGetManualRadius();
   float fGetManualLinearVelo();
+  bool bGetChangeDeltaGeometryUpFront();
+  bool bGetChangeDeltaGeometryUpBack();
+  void sendDeltasGeometryResponseFrameFront(const uint8_t ret);
+  void sendDeltasGeometryResponseFrameBack(const uint8_t ret);
   void vAssemblyStateMachineFrame(uint* uCanID, uint8_t* u8MsgBytes, uint uFrameType);
 
   virtual int configure();

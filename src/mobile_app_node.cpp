@@ -2,18 +2,21 @@
  * Copyright (C) 2020 Agribot. All rights reserved.
  */
 
-#include <ros/ros.h>
-#include <ros/console.h>
 #include <agribot_common/CommonFunctions/ros_common_functions.h>
-#include <agribot_msgs/AgribotMobileAppFrame.h>
-#include <agribot_msgs/AgribotManualControl.h>
 #include <agribot_msgs/AgribotAppErrorFlag.h>
+#include <agribot_msgs/AgribotManualControl.h>
+#include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/AgribotTool.h>
-#include <industrial_msgs/RobotMode.h>
+#include <agribot_msgs/ChangeDeltasGeometry.h>
 #include <geometry_msgs/Twist.h>
+#include <hal_mobile_app/MobileAppConstants.h>
 #include <hal_mobile_app/MobileAppHandler.h>
+#include <industrial_msgs/RobotMode.h>
+#include <ros/console.h>
+#include <ros/ros.h>
 #include <std_msgs/Int32.h>
 #include <std_msgs/String.h>
+
 #include <sstream>
 
 #define HEADER_STRING_MOB_APP_FRAME "mobile_app_commands_link"
@@ -166,6 +169,25 @@ int main(int argc, char** argv)
       nh.advertise<agribot_msgs::AgribotTool>("/agribot/control/tool/front/manual", 1);
   ros::Publisher back_tpl_config_publisher =
       nh.advertise<agribot_msgs::AgribotTool>("/agribot/control/tool/back/manual", 1);
+  ros::ServiceClient change_delta_geometry_front_client = nh.serviceClient<agribot_msgs::ChangeDeltasGeometry>("/agribo"
+                                                                                                               "t/cart/"
+                                                                                                               "caterpi"
+                                                                                                               "llar/"
+                                                                                                               "front/"
+                                                                                                               "change_"
+                                                                                                               "deltas_"
+                                                                                                               "geometr"
+                                                                                                               "y");
+
+  ros::ServiceClient change_delta_geometry_back_client = nh.serviceClient<agribot_msgs::ChangeDeltasGeometry>("/agribo"
+                                                                                                              "t/cart/"
+                                                                                                              "caterpi"
+                                                                                                              "llar/"
+                                                                                                              "back/"
+                                                                                                              "change_"
+                                                                                                              "deltas_"
+                                                                                                              "geometr"
+                                                                                                              "y");
 
   if (bSimulation == true)
   {
@@ -242,7 +264,7 @@ int main(int argc, char** argv)
         vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
         StateMachinePub.publish(FrameMsg);
       }
-      if ((u16Status & RECEIVED_AUTO_STEERING) == RECEIVED_AUTO_STEERING )
+      if ((u16Status & RECEIVED_AUTO_STEERING) == RECEIVED_AUTO_STEERING)
       {
         RobMode.val = RobMode.AUTO;
         StateMachineModePub.publish(RobMode);
@@ -312,6 +334,54 @@ int main(int argc, char** argv)
             StateMachinePub.publish(FrameMsg);
           }
         }
+      }
+      if ((u16Status & RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT) == RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT)
+      {
+        can_frame message;
+        agribot_msgs::ChangeDeltasGeometry service;
+        if (CommHandlerControl.bGetChangeDeltaGeometryUpFront())
+        {
+          service.request.cart_delta_command =
+              agribot_msgs::ChangeDeltasGeometry::Request::ELEVATED_CATERPILLAR_GEOMETRY;
+        }
+        else
+        {
+          service.request.cart_delta_command = agribot_msgs::ChangeDeltasGeometry::Request::NORMAL_CATERPILLAR_GEOMETRY;
+        }
+        if (change_delta_geometry_front_client.call(service))
+        {
+          CommHandlerControl.sendDeltasGeometryResponseFrameFront(service.response.result);
+        }
+        else
+        {
+          ROS_WARN_STREAM("Unable to call service server.");
+        }
+        CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT);
+      }
+      if ((u16Status & RECEIVED_CHANGE_DELTA_GEOMETRY_BACK) == RECEIVED_CHANGE_DELTA_GEOMETRY_BACK)
+      {
+        agribot_msgs::ChangeDeltasGeometry service;
+        if (CommHandlerControl.bGetChangeDeltaGeometryUpBack())
+        {
+          service.request.cart_delta_command =
+              agribot_msgs::ChangeDeltasGeometry::Request::ELEVATED_CATERPILLAR_GEOMETRY;
+        }
+        else
+        {
+          service.request.cart_delta_command = agribot_msgs::ChangeDeltasGeometry::Request::NORMAL_CATERPILLAR_GEOMETRY;
+        }
+        if (change_delta_geometry_back_client.call(service))
+        {
+          CommHandlerControl.sendDeltasGeometryResponseFrameBack(service.response.result);
+        }
+        else
+        {
+          ROS_WARN_STREAM("Unable to call service server.");
+        }
+        // if (service.response.result == service.request.cart_delta_command)
+        // {
+        // }
+        CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_CHANGE_DELTA_GEOMETRY_BACK);
       }
     }
     // Tool manager RFID tools scanning

@@ -22,6 +22,8 @@ inline constexpr uint16_t rfid{ 0x1f4 };
 inline constexpr uint16_t tpl_config{ 0x13D };
 inline constexpr uint16_t tpl_response{ 0x13E };
 inline constexpr uint16_t tpl_feedback{ 0x13F };
+inline constexpr uint16_t change_delta_geometry_front{ 0x123 };
+inline constexpr uint16_t change_delta_geometry_back{ 0x124 };
 }  // namespace MobileAppCanFrameId
 
 namespace MobileAppRfid
@@ -40,6 +42,13 @@ inline constexpr uint8_t tag_start_frame_size{ 3 };
 inline constexpr uint8_t tag_data_frame_size{ 8 };
 inline constexpr uint8_t data_frame_epc_payload{ 7 };
 }  // namespace MobileAppRfid
+
+namespace MobileAppDeltaGeometry
+{
+inline constexpr uint16_t delta_geometry_resp_frame_len{ 2 };
+inline constexpr uint16_t config_id_byte{ 0 };
+inline constexpr uint16_t sending_byte_value{ 1 };
+}  // namespace MobileAppDeltaGeometry
 
 namespace MobileAppTpl
 {
@@ -64,6 +73,8 @@ enum feedback_byte
 #define LIN_VELO_BYTE 4
 #define RADIUS_PARSE_CONST 10
 #define LIN_VELO_PARSE_CONST 100
+#define CHANGE_DELTA_GEOMETRY_DIR_BYTE 1
+#define IN_OUT_BYTE 0
 
 constexpr uint16_t addr_mask = 0x7FF;
 
@@ -75,6 +86,9 @@ constexpr uint16_t addr_mask = 0x7FF;
 
 #define BACKWARD -1
 #define FORWARD 1
+
+#define UP 1
+#define DOWN 0
 
 #define ERROR_TYPE_BYTE 0
 #define ERROR_SPECIFIC_BYTE 1

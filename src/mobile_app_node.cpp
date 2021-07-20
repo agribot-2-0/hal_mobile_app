@@ -348,15 +348,13 @@ int main(int argc, char** argv)
         {
           service.request.cart_delta_command = agribot_msgs::ChangeDeltasGeometry::Request::NORMAL_CATERPILLAR_GEOMETRY;
         }
+
         if (change_delta_geometry_front_client.call(service))
         {
           CommHandlerControl.sendDeltasGeometryResponseFrameFront(service.response.result);
         }
-        else
-        {
-          ROS_WARN_STREAM("Unable to call service server.");
-        }
-        CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT);
+
+        // CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT);
       }
       if ((u16Status & RECEIVED_CHANGE_DELTA_GEOMETRY_BACK) == RECEIVED_CHANGE_DELTA_GEOMETRY_BACK)
       {
@@ -370,18 +368,13 @@ int main(int argc, char** argv)
         {
           service.request.cart_delta_command = agribot_msgs::ChangeDeltasGeometry::Request::NORMAL_CATERPILLAR_GEOMETRY;
         }
+
         if (change_delta_geometry_back_client.call(service))
         {
           CommHandlerControl.sendDeltasGeometryResponseFrameBack(service.response.result);
         }
-        else
-        {
-          ROS_WARN_STREAM("Unable to call service server.");
-        }
-        // if (service.response.result == service.request.cart_delta_command)
-        // {
-        // }
-        CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_CHANGE_DELTA_GEOMETRY_BACK);
+
+        // CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_CHANGE_DELTA_GEOMETRY_BACK);
       }
     }
     // Tool manager RFID tools scanning

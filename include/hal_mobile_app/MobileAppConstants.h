@@ -46,7 +46,7 @@ inline constexpr uint8_t data_frame_epc_payload{ 7 };
 namespace MobileAppDeltaGeometry
 {
 inline constexpr uint16_t delta_geometry_resp_frame_len{ 2 };
-inline constexpr uint16_t config_id_byte{ 0 };
+inline constexpr uint16_t in_out_byte{ 0 };
 inline constexpr uint16_t sending_byte_value{ 1 };
 }  // namespace MobileAppDeltaGeometry
 

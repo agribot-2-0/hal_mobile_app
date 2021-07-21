@@ -7,8 +7,6 @@
 
 #include <iostream>
 
-#include "ros/ros.h"
-
 MobileAppHandler::MobileAppHandler()
 {
   bSendToController = false;
@@ -103,7 +101,7 @@ bool MobileAppHandler::bRfidIsAntSelected(const can_frame& msg, uint8_t sel_ant)
 
 uint16_t MobileAppHandler::u16ParseCanFrames()
 {
-  uint8_t u16Status = 0;
+  uint16_t u16Status = 0x00;
   can_frame message;
   while (!FramesQueue.empty())
   {

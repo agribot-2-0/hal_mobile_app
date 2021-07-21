@@ -161,19 +161,33 @@ int main(int argc, char** argv)
   // Topic used to read the path name from task config file
   ros::Publisher StateMachineTaskPub = nh.advertise<std_msgs::String>("/agribot/state_machine/task", 1);
   // The client of scan tags service
-  ros::ServiceClient rfid_tags_scanner_client =
-      nh.serviceClient<agribot_msgs::ToolManagerScan>("agribot/tool_management/scan");
+  ros::ServiceClient rfid_tags_scanner_client = nh.serviceClient<agribot_msgs::ToolManagerScan>("agribot/"
+                                                                                                "tool_management/scan");
   agribot_msgs::ToolManagerScan rfid_tags_scanner_srv;
   // Tpl config publishers
   ros::Publisher front_tpl_config_publisher =
       nh.advertise<agribot_msgs::AgribotTool>("/agribot/control/tool/front/manual", 1);
   ros::Publisher back_tpl_config_publisher =
       nh.advertise<agribot_msgs::AgribotTool>("/agribot/control/tool/back/manual", 1);
-  ros::ServiceClient change_delta_geometry_front_client =
-      nh.serviceClient<agribot_msgs::ChangeDeltasGeometry>("/agribot/cart/caterpillar/front/change_deltas_geometry");
+  ros::ServiceClient change_delta_geometry_front_client = nh.serviceClient<agribot_msgs::ChangeDeltasGeometry>("/agribo"
+                                                                                                               "t/cart/"
+                                                                                                               "caterpi"
+                                                                                                               "llar/"
+                                                                                                               "front/"
+                                                                                                               "change_"
+                                                                                                               "deltas_"
+                                                                                                               "geometr"
+                                                                                                               "y");
 
-  ros::ServiceClient change_delta_geometry_back_client =
-      nh.serviceClient<agribot_msgs::ChangeDeltasGeometry>("/agribot/cart/caterpillar/back/change_deltas_geometry");
+  ros::ServiceClient change_delta_geometry_back_client = nh.serviceClient<agribot_msgs::ChangeDeltasGeometry>("/agribot"
+                                                                                                              "/cart/"
+                                                                                                              "caterpil"
+                                                                                                              "lar/"
+                                                                                                              "back/"
+                                                                                                              "change_"
+                                                                                                              "deltas_"
+                                                                                                              "geometr"
+                                                                                                              "y");
 
   if (bSimulation == true)
   {
@@ -196,7 +210,7 @@ int main(int argc, char** argv)
   std_msgs::String task_name;
   uint8_t u8MsgBytes[8];
   uint uCanID = 0;
-  uint16_t u16Status = 0x00;
+  uint16_t u16Status = 0x0000;
 
   while (ros::ok())
   {
@@ -323,7 +337,6 @@ int main(int argc, char** argv)
       }
       if ((u16Status & RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT) == RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT)
       {
-        can_frame message;
         agribot_msgs::ChangeDeltasGeometry service;
         if (CommHandlerControl.bGetChangeDeltaGeometryUpFront())
         {
@@ -339,8 +352,6 @@ int main(int argc, char** argv)
         {
           CommHandlerControl.sendDeltasGeometryResponseFrameFront(service.response.result);
         }
-
-        // CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT);
       }
       if ((u16Status & RECEIVED_CHANGE_DELTA_GEOMETRY_BACK) == RECEIVED_CHANGE_DELTA_GEOMETRY_BACK)
       {
@@ -359,8 +370,6 @@ int main(int argc, char** argv)
         {
           CommHandlerControl.sendDeltasGeometryResponseFrameBack(service.response.result);
         }
-
-        // CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_CHANGE_DELTA_GEOMETRY_BACK);
       }
     }
     // Tool manager RFID tools scanning

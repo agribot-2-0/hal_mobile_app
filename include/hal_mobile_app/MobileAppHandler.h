@@ -10,6 +10,7 @@
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/ToolManagerScan.h>
 #include <hal_mobile_app/TplConfigHandle/TplConfigHandle.h>
+#include <stdio.h>
 
 #include <boost/array.hpp>
 #include <cmath>
@@ -27,8 +28,8 @@
 #define RECEIVED_MANUALSTEERING_ERROR 0x0040
 #define RECEIVED_ENG_ERROR_START 0x0100
 #define RECEIVED_ENG_ERROR 0x0200
-#define RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT 0x0005
-#define RECEIVED_CHANGE_DELTA_GEOMETRY_BACK 0x0006
+#define RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT (0x01 << 10)
+#define RECEIVED_CHANGE_DELTA_GEOMETRY_BACK (0x01 << 11)
 
 class MobileAppHandler : public AgribotComponent
 {

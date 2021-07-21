@@ -287,14 +287,6 @@ void MobileAppHandler::vAssemblyStateMachineFrame(uint* uCanID, uint8_t* u8MsgBy
         *uCanID = 0;
       }
       break;
-    // case RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT:
-    //   *uCanID = MobileAppCanFrameId::change_delta_geometry_front;
-    //   u8MsgBytes[CHANGE_DELTA_GEOMETRY_DIR_BYTE] = bChangeDeltaGeometryUpFront;
-    //   break;
-    // case RECEIVED_CHANGE_DELTA_GEOMETRY_BACK:
-    //   *uCanID = MobileAppCanFrameId::change_delta_geometry_back;
-    //   u8MsgBytes[CHANGE_DELTA_GEOMETRY_DIR_BYTE] = bChangeDeltaGeometryUpBack;
-    //   break;
     default:
       *uCanID = 0;
       break;

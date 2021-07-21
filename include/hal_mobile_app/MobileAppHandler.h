@@ -12,12 +12,13 @@
 #include <hal_mobile_app/TplConfigHandle/TplConfigHandle.h>
 #include <stdio.h>
 
-#include <boost/array.hpp>
 #include <cmath>
 #include <memory>
 #include <queue>
 #include <string>
 #include <vector>
+
+#include <boost/array.hpp>
 
 #define RECEIVED_HANDSHAKE (0x0001 << 0)
 #define RECEIVED_HEARTBEAT (0x0001 << 1)

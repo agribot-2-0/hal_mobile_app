@@ -45,9 +45,12 @@ inline constexpr uint8_t data_frame_epc_payload{ 7 };
 
 namespace MobileAppDeltaGeometry
 {
-inline constexpr uint16_t delta_geometry_resp_frame_len{ 2 };
-inline constexpr uint16_t in_out_byte{ 0 };
-inline constexpr uint16_t sending_byte_value{ 1 };
+inline constexpr uint8_t delta_geometry_response_frame_length{ 2 };
+inline constexpr uint8_t request_response_byte{ 0 };
+inline constexpr uint8_t sending_byte_value{ 1 };
+inline constexpr uint8_t caterpillar_state_byte{ 1 };
+inline constexpr uint8_t elevated_caterpillar_state{ 1 };
+inline constexpr uint8_t normal_caterpillar_state{ 0 };
 }  // namespace MobileAppDeltaGeometry
 
 namespace MobileAppTpl
@@ -73,8 +76,6 @@ enum feedback_byte
 #define LIN_VELO_BYTE 4
 #define RADIUS_PARSE_CONST 10
 #define LIN_VELO_PARSE_CONST 100
-#define CHANGE_DELTA_GEOMETRY_DIR_BYTE 1
-#define IN_OUT_BYTE 0
 
 constexpr uint16_t addr_mask = 0x7FF;
 
@@ -86,9 +87,6 @@ constexpr uint16_t addr_mask = 0x7FF;
 
 #define BACKWARD -1
 #define FORWARD 1
-
-#define UP 1
-#define DOWN 0
 
 #define ERROR_TYPE_BYTE 0
 #define ERROR_SPECIFIC_BYTE 1

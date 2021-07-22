@@ -147,11 +147,9 @@ int main(int argc, char** argv)
       nh.advertise<agribot_msgs::AgribotMobileAppFrame>("agribot/mobile_app_communication", 1000);
   // Publish cmd_vel_manual from application commands
   ros::Publisher PublishManualSteering = nh.advertise<agribot_msgs::AgribotManualControl>("/cmd_vel_manual", 1);
-  // Topic used to communicate change of state to the state
-  // machine
+  // Topic used to communicate change of state to the state machine
   ros::Publisher StateMachineModePub = nh.advertise<industrial_msgs::RobotMode>("/agribot/state_machine/mode", 1);
-  // Topic used to communicate change of state to the state
-  // machine
+  // Topic used to communicate change of state to the state machine
   ros::Publisher StateMachineErrorPub =
       nh.advertise<agribot_msgs::AgribotAppErrorFlag>("/agribot/state_machine/error", 2);
   // Topic used to read the path name from task config file
@@ -182,8 +180,7 @@ int main(int argc, char** argv)
         nh.subscribe("/agribot/app_commands_events_simulation", 1, vAppCommandsSimulationEventsCallback);
   }
 
-  // synchronization timer to achieve +-3Hz signal for
-  // kinematic control
+  // synchronization timer to achieve +-3Hz signal for kinematic control
   ros::Timer timer = nh.createTimer(ros::Duration(0.3), synchro_callback);
 
   ros::Rate loop_rate(10);

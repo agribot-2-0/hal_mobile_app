@@ -38,8 +38,8 @@ class MobileAppHandler : public AgribotComponent
   std::queue<can_frame> FramesQueue;
   bool bSendToController = false;
   bool bArcFreshData = false;
-  bool bChangeDeltaGeometryUpFront = false;
-  bool bChangeDeltaGeometryUpBack = false;
+  bool changeDeltaGeometryElevatedFront = false;
+  bool changeDeltaGeometryElevatedBack = false;
   double dManualLinearVelo = 0;
   double dRadius = 0;
   std::queue<uint8_t> ProtocolErrorTypeQueue;
@@ -98,7 +98,7 @@ class MobileAppHandler : public AgribotComponent
   float fBackLinear;
   float fBackAngular;
 
- public:
+public:
   MobileAppHandler();
   ~MobileAppHandler();
   void initializeCanHandler(std::unique_ptr<ICan> can_handler);

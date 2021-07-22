@@ -451,10 +451,10 @@ From Mobile Application. This frame is used to stop any ongoing track moving tas
 \end{plantuml}
 
 \subsection{Change front delta geometry}
-From Mobile Application. This frame is used to put up or down front caterpillars.
+From Mobile Application. This is a request frame used to put up or down front caterpillars.
 
 \begin{itemize}
-    \item COM - a code number describing the meaning of the frame, in this case 0 (change request)
+    \item REQ\_RES - a code number describing the meaning of the frame (request or response), in this case 0 (change request)
     \item CAT\_STA - caterpillar state, 0 for normal caterpillar state, 1 (anything but 0) for elevated caterpillar state
 \end{itemize}{}
 
@@ -464,7 +464,7 @@ From Mobile Application. This frame is used to put up or down front caterpillars
         \hline
         ID   & B0   & B1 & B2 & B3 & B4 & B5 & B6 & B7 \\
         \hline
-        0x1F5 & COM & CAT\_STA  & *  & *  & *  & *  & *  & *  \\
+        0x1F5 & REQ\_RES & CAT\_STA  & *  & *  & *  & *  & *  & *  \\
         \hline
     \end{tabular}
 \end{center}
@@ -472,7 +472,7 @@ From Mobile Application. This frame is used to put up or down front caterpillars
 From Advantech to Mobile Application. This frame is a callback from putting up or down front caterpillars.
 
 \begin{itemize}
-    \item COM - a code number describing the meaning of the frame, in this case 1 (change response)
+    \item REQ\_RES - a code number describing the meaning of the frame (request or response), in this case 1 (change response)
     \item CAT\_STA - caterpillar state, 0 for normal caterpillar state, 1 for elevated caterpillar state, 2 for unknown caterpillar state
 \end{itemize}{}
 
@@ -482,7 +482,7 @@ From Advantech to Mobile Application. This frame is a callback from putting up o
         \hline
         ID   & B0   & B1 & B2 & B3 & B4 & B5 & B6 & B7 \\
         \hline
-        0x1F5 & COM & CAT\_STA  & *  & *  & *  & *  & *  & *  \\
+        0x1F5 & REQ\_RES & CAT\_STA  & *  & *  & *  & *  & *  & *  \\
         \hline
     \end{tabular}
 \end{center}
@@ -491,7 +491,7 @@ From Advantech to Mobile Application. This frame is a callback from putting up o
 From Mobile Application. This frame is used to put up or down back caterpillars.
 
 \begin{itemize}
-    \item COM - a code number describing the meaning of the frame, in this case 0 (change request)
+    \item REQ\_RES - a code number describing the meaning of the frame (request or response), in this case 0 (change request)
     \item CAT\_STA - caterpillar state, 0 for normal caterpillar state, 1 (anything but 0) for elevated caterpillar state
 \end{itemize}{}
 
@@ -501,7 +501,7 @@ From Mobile Application. This frame is used to put up or down back caterpillars.
         \hline
         ID   & B0   & B1 & B2 & B3 & B4 & B5 & B6 & B7 \\
         \hline
-        0x1F5 & COM & CAT\_STA  & *  & *  & *  & *  & *  & *  \\
+        0x1F5 & REQ\_RES & CAT\_STA  & *  & *  & *  & *  & *  & *  \\
         \hline
     \end{tabular}
 \end{center}
@@ -509,7 +509,7 @@ From Mobile Application. This frame is used to put up or down back caterpillars.
 From Advantech to Mobile Application. This frame is a callback from putting up or down back caterpillars.
 
 \begin{itemize}
-    \item COM - a code number describing the meaning of the frame, in this case 1 (change response)
+    \item REQ\_RES - a code number describing the meaning of the frame (request or response), in this case 1 (change response)
     \item CAT\_STA - caterpillar state, 0 for normal caterpillar state, 1 for elevated caterpillar state, 2 for unknown caterpillar state
 \end{itemize}{}
 
@@ -519,7 +519,7 @@ From Advantech to Mobile Application. This frame is a callback from putting up o
         \hline
         ID   & B0   & B1 & B2 & B3 & B4 & B5 & B6 & B7 \\
         \hline
-        0x1F5 & COM & CAT\_STA  & *  & *  & *  & *  & *  & *  \\
+        0x1F5 & REQ\_RES & CAT\_STA  & *  & *  & *  & *  & *  & *  \\
         \hline
     \end{tabular}
 \end{center}

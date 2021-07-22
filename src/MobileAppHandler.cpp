@@ -170,18 +170,20 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
       scan_back_ = bRfidIsAntSelected(message, MobileAppRfid::back_ant_selected);
     }
     else if ((MobileAppCanFrameId::change_delta_geometry_front & addr_mask) == (message.can_id & addr_mask) &&
-             message.data[MobileAppDeltaGeometry::request_response_byte] == 0)
+             message.data[MobileAppDeltaGeometry::request_response_byte] == MobileAppDeltaGeometry::request_byte_value)
     {
       u16Status |= RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT;
-      changeDeltaGeometryElevatedFront = message.data[MobileAppDeltaGeometry::caterpillar_state_byte] == 0 ?
+      changeDeltaGeometryElevatedFront = message.data[MobileAppDeltaGeometry::caterpillar_state_byte] ==
+                                                 MobileAppDeltaGeometry::normal_caterpillar_state ?
                                              MobileAppDeltaGeometry::normal_caterpillar_state :
                                              MobileAppDeltaGeometry::elevated_caterpillar_state;
     }
     else if ((MobileAppCanFrameId::change_delta_geometry_back & addr_mask) == (message.can_id & addr_mask) &&
-             message.data[MobileAppDeltaGeometry::request_response_byte] == 0)
+             message.data[MobileAppDeltaGeometry::request_response_byte] == MobileAppDeltaGeometry::request_byte_value)
     {
       u16Status |= RECEIVED_CHANGE_DELTA_GEOMETRY_BACK;
-      changeDeltaGeometryElevatedBack = message.data[MobileAppDeltaGeometry::caterpillar_state_byte] == 0 ?
+      changeDeltaGeometryElevatedBack = message.data[MobileAppDeltaGeometry::caterpillar_state_byte] ==
+                                                MobileAppDeltaGeometry::normal_caterpillar_state ?
                                             MobileAppDeltaGeometry::normal_caterpillar_state :
                                             MobileAppDeltaGeometry::elevated_caterpillar_state;
     }
@@ -550,7 +552,7 @@ void MobileAppHandler::sendDeltasGeometryResponseFrameFront(const uint8_t ret)
   can_frame message;
   message.can_id = MobileAppCanFrameId::change_delta_geometry_front;
   message.can_dlc = MobileAppDeltaGeometry::delta_geometry_response_frame_length;
-  message.data[MobileAppDeltaGeometry::request_response_byte] = MobileAppDeltaGeometry::sending_byte_value;
+  message.data[MobileAppDeltaGeometry::request_response_byte] = MobileAppDeltaGeometry::response_byte_value;
   message.data[MobileAppTpl::ret_code_byte] = static_cast<uint8_t>(ret);
   can_handler_->iSendFrame(&message, false);
 }
@@ -560,7 +562,7 @@ void MobileAppHandler::sendDeltasGeometryResponseFrameBack(const uint8_t ret)
   can_frame message;
   message.can_id = MobileAppCanFrameId::change_delta_geometry_back;
   message.can_dlc = MobileAppDeltaGeometry::delta_geometry_response_frame_length;
-  message.data[MobileAppDeltaGeometry::request_response_byte] = MobileAppDeltaGeometry::sending_byte_value;
+  message.data[MobileAppDeltaGeometry::request_response_byte] = MobileAppDeltaGeometry::response_byte_value;
   message.data[MobileAppTpl::ret_code_byte] = static_cast<uint8_t>(ret);
   can_handler_->iSendFrame(&message, false);
 }

@@ -47,7 +47,8 @@ namespace MobileAppDeltaGeometry
 {
 inline constexpr uint8_t delta_geometry_response_frame_length{ 2 };
 inline constexpr uint8_t request_response_byte{ 0 };
-inline constexpr uint8_t sending_byte_value{ 1 };
+inline constexpr uint8_t response_byte_value{ 1 };
+inline constexpr uint8_t request_byte_value{ 0 };
 inline constexpr uint8_t caterpillar_state_byte{ 1 };
 inline constexpr uint8_t elevated_caterpillar_state{ 1 };
 inline constexpr uint8_t normal_caterpillar_state{ 0 };

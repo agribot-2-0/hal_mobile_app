@@ -101,7 +101,7 @@ bool MobileAppHandler::bRfidIsAntSelected(const can_frame& msg, uint8_t sel_ant)
 
 uint16_t MobileAppHandler::u16ParseCanFrames()
 {
-  uint8_t u16Status = 0;
+  uint16_t u16Status = 0;
   can_frame message;
   while (!FramesQueue.empty())
   {
@@ -152,6 +152,14 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
       CodesTotal = message.data[ENG_ERR_NUM_TOTAL_BYTE];
       LampState = message.data[LAMP_STATE_BYTE];
       u16Status |= RECEIVED_ENG_ERROR_START;
+    }
+    else if ((MobileAppCanFrameId::logging_start & addr_mask) == (message.can_id & addr_mask))
+    {
+      u16Status |= RECEIVED_LOGGING_START;
+    }
+    else if ((MobileAppCanFrameId::logging_stop & addr_mask) == (message.can_id & addr_mask))
+    {
+      u16Status |= RECEIVED_LOGGING_STOP;
     }
     else if ((MobileAppCanFrameId::protocol_eng_error & addr_mask) == (message.can_id & addr_mask))
     {

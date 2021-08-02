@@ -242,7 +242,7 @@ int main(int argc, char** argv)
         vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
         StateMachinePub.publish(FrameMsg);
       }
-      if ((u16Status & RECEIVED_AUTO_STEERING) == RECEIVED_AUTO_STEERING )
+      if ((u16Status & RECEIVED_AUTO_STEERING) == RECEIVED_AUTO_STEERING)
       {
         RobMode.val = RobMode.AUTO;
         StateMachineModePub.publish(RobMode);
@@ -312,6 +312,18 @@ int main(int argc, char** argv)
             StateMachinePub.publish(FrameMsg);
           }
         }
+      }
+      if ((u16Status & RECEIVED_LOGGING_START) == RECEIVED_LOGGING_START)
+      {
+        ROS_INFO_STREAM("[HalMobileApp]"
+                        << " Started logging.");
+        system("systemctl --user start advantech-log.service");
+      }
+      if ((u16Status & RECEIVED_LOGGING_STOP) == RECEIVED_LOGGING_STOP)
+      {
+        ROS_INFO_STREAM("[HalMobileApp]"
+                        << " Stopped logging.");
+        system("systemctl --user stop advantech-log.service");
       }
     }
     // Tool manager RFID tools scanning

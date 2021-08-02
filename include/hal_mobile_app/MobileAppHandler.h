@@ -26,6 +26,8 @@
 #define RECEIVED_MANUALSTEERING_ERROR 0x0040
 #define RECEIVED_ENG_ERROR_START 0x0100
 #define RECEIVED_ENG_ERROR 0x0200
+#define RECEIVED_LOGGING_START 0x1000
+#define RECEIVED_LOGGING_STOP 0x2000
 
 class MobileAppHandler : public AgribotComponent
 {
@@ -91,7 +93,7 @@ class MobileAppHandler : public AgribotComponent
   float fBackLinear;
   float fBackAngular;
 
- public:
+public:
   MobileAppHandler();
   ~MobileAppHandler();
   void initializeCanHandler(std::unique_ptr<ICan> can_handler);

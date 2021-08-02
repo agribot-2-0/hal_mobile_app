@@ -22,6 +22,8 @@ inline constexpr uint16_t rfid{ 0x1f4 };
 inline constexpr uint16_t tpl_config{ 0x13D };
 inline constexpr uint16_t tpl_response{ 0x13E };
 inline constexpr uint16_t tpl_feedback{ 0x13F };
+inline constexpr uint16_t logging_start{ 0x12E };
+inline constexpr uint16_t logging_stop{ 0x12F };
 }  // namespace MobileAppCanFrameId
 
 namespace MobileAppRfid

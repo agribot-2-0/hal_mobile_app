@@ -24,6 +24,7 @@ inline constexpr uint16_t tpl_response{ 0x13E };
 inline constexpr uint16_t tpl_feedback{ 0x13F };
 inline constexpr uint16_t change_delta_geometry_front{ 0x1f5 };
 inline constexpr uint16_t change_delta_geometry_back{ 0x1f6 };
+inline constexpr uint16_t change_steering_mode{ 0x16C };
 }  // namespace MobileAppCanFrameId
 
 namespace MobileAppRfid
@@ -53,6 +54,19 @@ inline constexpr uint8_t caterpillar_state_byte{ 1 };
 inline constexpr uint8_t elevated_caterpillar_state{ 1 };
 inline constexpr uint8_t normal_caterpillar_state{ 0 };
 }  // namespace MobileAppDeltaGeometry
+
+namespace MobileAppSteeringMode
+{
+inline constexpr uint8_t four_wheel_mode{ 0 };
+inline constexpr uint8_t front_wheel_mode{ 1 };
+inline constexpr uint8_t crab_mode{ 2 };
+inline constexpr uint8_t steering_mode_byte{ 1 };
+inline constexpr uint8_t request_response_byte{ 0 };
+inline constexpr uint8_t response_byte_value{ 1 };
+inline constexpr uint8_t request_byte_value{ 0 };
+inline constexpr uint8_t response_frame_length{ 2 };
+inline constexpr uint8_t return_code_byte{ 1 };
+}  // namespace MobileAppSteeringMode
 
 namespace MobileAppTpl
 {

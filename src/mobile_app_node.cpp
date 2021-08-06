@@ -8,6 +8,7 @@
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/AgribotTool.h>
 #include <agribot_msgs/ChangeDeltasGeometry.h>
+#include <agribot_msgs/SteeringMode.h>
 #include <geometry_msgs/Twist.h>
 #include <hal_mobile_app/MobileAppConstants.h>
 #include <hal_mobile_app/MobileAppHandler.h>
@@ -173,6 +174,8 @@ int main(int argc, char** argv)
       nh.serviceClient<agribot_msgs::ChangeDeltasGeometry>("/agribot/cart/caterpillar/front/change_deltas_geometry");
   ros::ServiceClient change_delta_geometry_back_client =
       nh.serviceClient<agribot_msgs::ChangeDeltasGeometry>("/agribot/cart/caterpillar/back/change_deltas_geometry");
+  ros::ServiceClient steering_mode_client =
+      nh.serviceClient<agribot_msgs::SteeringMode>("/agribot/kinematics_controller/steering_mode");
 
   if (bSimulation == true)
   {
@@ -354,6 +357,26 @@ int main(int argc, char** argv)
         if (change_delta_geometry_back_client.call(service))
         {
           CommHandlerControl.sendDeltasGeometryResponseFrameBack(service.response.result);
+        }
+      }
+      if ((u16Status & RECEIVED_CHANGE_ROBOT_CINEMATICS) == RECEIVED_CHANGE_ROBOT_CINEMATICS)
+      {
+        agribot_msgs::SteeringMode service;
+        if (CommHandlerControl.getSteeringMode() == MobileAppSteeringMode::four_wheel_mode)
+        {
+          service.request.steering_mode = agribot_msgs::SteeringMode::Request::FOUR_WHEEL;
+        }
+        else if (CommHandlerControl.getSteeringMode() == MobileAppSteeringMode::front_wheel_mode)
+        {
+          service.request.steering_mode = agribot_msgs::SteeringMode::Request::FRONT_WHEEL;
+        }
+        else if (CommHandlerControl.getSteeringMode() == MobileAppSteeringMode::crab_mode)
+        {
+          service.request.steering_mode = agribot_msgs::SteeringMode::Request::CRAB;
+        }
+        if (steering_mode_client.call(service))
+        {
+          CommHandlerControl.sendSteeringModeResponseFrame(service.response.result);
         }
       }
     }

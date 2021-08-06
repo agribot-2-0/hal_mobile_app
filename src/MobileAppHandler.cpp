@@ -187,6 +187,23 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
                                             MobileAppDeltaGeometry::normal_caterpillar_state :
                                             MobileAppDeltaGeometry::elevated_caterpillar_state;
     }
+    else if ((MobileAppCanFrameId::change_steering_mode & addr_mask) == (message.can_id & addr_mask) &&
+             message.data[MobileAppSteeringMode::request_response_byte] == MobileAppSteeringMode::request_byte_value)
+    {
+      u16Status |= RECEIVED_CHANGE_ROBOT_CINEMATICS;
+      if (message.data[MobileAppSteeringMode::steering_mode_byte] == MobileAppSteeringMode::four_wheel_mode)
+      {
+        steering_mode_ = MobileAppSteeringMode::four_wheel_mode;
+      }
+      else if (message.data[MobileAppSteeringMode::steering_mode_byte] == MobileAppSteeringMode::front_wheel_mode)
+      {
+        steering_mode_ = MobileAppSteeringMode::front_wheel_mode;
+      }
+      else if (message.data[MobileAppSteeringMode::steering_mode_byte] == MobileAppSteeringMode::crab_mode)
+      {
+        steering_mode_ = MobileAppSteeringMode::crab_mode;
+      }
+    }
 
     else if (isTplPositionChangeRequested(message))
     {
@@ -317,6 +334,11 @@ bool MobileAppHandler::bGetChangeDeltaGeometryUpFront()
 bool MobileAppHandler::bGetChangeDeltaGeometryUpBack()
 {
   return changeDeltaGeometryElevatedBack;
+}
+
+uint8_t MobileAppHandler::getSteeringMode()
+{
+  return steering_mode_;
 }
 
 void MobileAppHandler::vSetSimulationAppFrame(const uint32_t uRecFrameID,
@@ -564,6 +586,16 @@ void MobileAppHandler::sendDeltasGeometryResponseFrameBack(const uint8_t ret)
   message.can_dlc = MobileAppDeltaGeometry::delta_geometry_response_frame_length;
   message.data[MobileAppDeltaGeometry::request_response_byte] = MobileAppDeltaGeometry::response_byte_value;
   message.data[MobileAppTpl::ret_code_byte] = static_cast<uint8_t>(ret);
+  can_handler_->iSendFrame(&message, false);
+}
+
+void MobileAppHandler::sendSteeringModeResponseFrame(const uint8_t ret)
+{
+  can_frame message;
+  message.can_id = MobileAppCanFrameId::change_steering_mode;
+  message.can_dlc = MobileAppSteeringMode::response_frame_length;
+  message.data[MobileAppSteeringMode::request_response_byte] = MobileAppSteeringMode::response_byte_value;
+  message.data[MobileAppSteeringMode::return_code_byte] = static_cast<uint8_t>(ret);
   can_handler_->iSendFrame(&message, false);
 }
 

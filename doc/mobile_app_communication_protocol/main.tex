@@ -733,6 +733,38 @@ If the ID is larger than capacity of frame, COM will increment.
         \hline
     \end{tabular}
 \end{center}
+\newpage
+\section{Logging start/stop frames}
+\subsection{Logging start frame}
+From mobile application. Starts logging all topics and can frames. 
+\begin{itemize}
+    \item Frame can contain any bytes, as long as the number of bytes is right (less than or equal to 8). Logging starts when received any message with this ID.
+\end{itemize}
 
+\textbf{Frame length = 1}
+\begin{center}
+    \begin{tabular}{| p{20pt} | p{40pt} | p{55pt} | p{55pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} |}
+        \hline
+        ID    & B0  & B1       & B2 & B3 & B4 & B5 & B6 & B7 \\
+        \hline
+        0x12E & 0x00 & * & *  & *  & *  & *  & *  & *  \\
+        \hline
+    \end{tabular}
+\end{center}
+\subsection{Logging stop frame}
+From mobile application. Stops logging all topics and can frames. 
+\begin{itemize}
+    \item Frame can contain any bytes, as long as the number of bytes is right (less than or equal to 8). Logging stops when received any message with this ID.
+\end{itemize}
 
+\textbf{Frame length = 1}
+\begin{center}
+    \begin{tabular}{| p{20pt} | p{40pt} | p{55pt} | p{55pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} |}
+        \hline
+        ID    & B0  & B1       & B2 & B3 & B4 & B5 & B6 & B7 \\
+        \hline
+        0x12F & 0x00 & * & *  & *  & *  & *  & *  & *  \\
+        \hline
+    \end{tabular}
+\end{center}
 \end{document}

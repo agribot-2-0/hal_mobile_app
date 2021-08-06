@@ -4,28 +4,33 @@
 
 #pragma once
 
-#include <hal_mobile_app/TplConfigHandle/TplConfigHandle.h>
+#include <agribot_common/AgribotComponent.h>
+#include <agribot_common/Can.h>
+#include <agribot_common/CanBus/ICan.h>
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/ToolManagerScan.h>
-#include <agribot_common/CanBus/ICan.h>
-#include <agribot_common/Can.h>
-#include <agribot_common/AgribotComponent.h>
-#include <memory>
-#include <vector>
-#include <queue>
+#include <hal_mobile_app/TplConfigHandle/TplConfigHandle.h>
+#include <stdio.h>
+
 #include <cmath>
+#include <memory>
+#include <queue>
 #include <string>
+#include <vector>
+
 #include <boost/array.hpp>
 
-#define RECEIVED_HANDSHAKE 0x0001
-#define RECEIVED_HEARTBEAT 0x0002
-#define RECEIVED_MANUAL_MODE_COMF 0x0004
-#define RECEIVED_MANUAL_STEERING 0x0008
-#define RECEIVED_AUTO_STEERING 0x0010
-#define RECEIVED_PROTOCOL_ERROR 0x0020
-#define RECEIVED_MANUALSTEERING_ERROR 0x0040
-#define RECEIVED_ENG_ERROR_START 0x0100
-#define RECEIVED_ENG_ERROR 0x0200
+#define RECEIVED_HANDSHAKE (0x0001 << 0)
+#define RECEIVED_HEARTBEAT (0x0001 << 1)
+#define RECEIVED_MANUAL_MODE_COMF (0x0001 << 2)
+#define RECEIVED_MANUAL_STEERING (0x0001 << 3)
+#define RECEIVED_AUTO_STEERING (0x0001 << 4)
+#define RECEIVED_PROTOCOL_ERROR (0x0001 << 5)
+#define RECEIVED_MANUALSTEERING_ERROR (0x0001 << 6)
+#define RECEIVED_ENG_ERROR_START (0x0001 << 8)
+#define RECEIVED_ENG_ERROR (0x0001 << 9)
+#define RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT (0x0001 << 10)
+#define RECEIVED_CHANGE_DELTA_GEOMETRY_BACK (0x0001 << 11)
 #define RECEIVED_LOGGING_START 0x1000
 #define RECEIVED_LOGGING_STOP 0x2000
 
@@ -35,6 +40,8 @@ class MobileAppHandler : public AgribotComponent
   std::queue<can_frame> FramesQueue;
   bool bSendToController = false;
   bool bArcFreshData = false;
+  bool changeDeltaGeometryElevatedFront = false;
+  bool changeDeltaGeometryElevatedBack = false;
   double dManualLinearVelo = 0;
   double dRadius = 0;
   std::queue<uint8_t> ProtocolErrorTypeQueue;
@@ -103,6 +110,10 @@ class MobileAppHandler : public AgribotComponent
   uint16_t u16ParseCanFrames();
   float fGetManualRadius();
   float fGetManualLinearVelo();
+  bool bGetChangeDeltaGeometryUpFront();
+  bool bGetChangeDeltaGeometryUpBack();
+  void sendDeltasGeometryResponseFrameFront(const uint8_t ret);
+  void sendDeltasGeometryResponseFrameBack(const uint8_t ret);
   void vAssemblyStateMachineFrame(uint* uCanID, uint8_t* u8MsgBytes, uint uFrameType);
 
   virtual int configure();

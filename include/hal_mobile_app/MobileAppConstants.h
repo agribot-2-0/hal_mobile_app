@@ -22,6 +22,8 @@ inline constexpr uint16_t rfid{ 0x1f4 };
 inline constexpr uint16_t tpl_config{ 0x13D };
 inline constexpr uint16_t tpl_response{ 0x13E };
 inline constexpr uint16_t tpl_feedback{ 0x13F };
+inline constexpr uint16_t change_delta_geometry_front{ 0x1f5 };
+inline constexpr uint16_t change_delta_geometry_back{ 0x1f6 };
 inline constexpr uint16_t logging_start{ 0x12E };
 inline constexpr uint16_t logging_stop{ 0x12F };
 }  // namespace MobileAppCanFrameId
@@ -42,6 +44,17 @@ inline constexpr uint8_t tag_start_frame_size{ 3 };
 inline constexpr uint8_t tag_data_frame_size{ 8 };
 inline constexpr uint8_t data_frame_epc_payload{ 7 };
 }  // namespace MobileAppRfid
+
+namespace MobileAppDeltaGeometry
+{
+inline constexpr uint8_t delta_geometry_response_frame_length{ 2 };
+inline constexpr uint8_t request_response_byte{ 0 };
+inline constexpr uint8_t response_byte_value{ 1 };
+inline constexpr uint8_t request_byte_value{ 0 };
+inline constexpr uint8_t caterpillar_state_byte{ 1 };
+inline constexpr uint8_t elevated_caterpillar_state{ 1 };
+inline constexpr uint8_t normal_caterpillar_state{ 0 };
+}  // namespace MobileAppDeltaGeometry
 
 namespace MobileAppTpl
 {

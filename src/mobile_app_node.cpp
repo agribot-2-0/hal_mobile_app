@@ -18,7 +18,7 @@
 #include <std_msgs/Int32.h>
 #include <std_msgs/String.h>
 
-#include <thread>
+#include <thread>  // NOLINT(build/c++11)
 #include <functional>
 #include <sstream>
 

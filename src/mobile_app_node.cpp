@@ -100,7 +100,8 @@ void callRfidScanSrv(ros::ServiceClient client,
   }
 }
 
-void steeringModeServiceHandler(ros::ServiceClient steering_mode_client, agribot_msgs::SteeringMode& service)
+void steeringModeServiceHandler(ros::ServiceClient steering_mode_client,
+                                agribot_msgs::SteeringMode& service)  // NOLINT(runtime/references)
 {
   if (steering_mode_client.call(service))
   {
@@ -109,7 +110,7 @@ void steeringModeServiceHandler(ros::ServiceClient steering_mode_client, agribot
 }
 
 void deltasGeometryFrontServiceHandler(ros::ServiceClient change_delta_geometry_front_client,
-                                       agribot_msgs::ChangeDeltasGeometry& service)
+                                       agribot_msgs::ChangeDeltasGeometry& service)  // NOLINT(runtime/references)
 {
   if (change_delta_geometry_front_client.call(service))
   {
@@ -118,7 +119,7 @@ void deltasGeometryFrontServiceHandler(ros::ServiceClient change_delta_geometry_
 }
 
 void deltasGeometryBackServiceHandler(ros::ServiceClient change_delta_geometry_back_client,
-                                      agribot_msgs::ChangeDeltasGeometry& service)
+                                      agribot_msgs::ChangeDeltasGeometry& service)  // NOLINT(runtime/references)
 {
   if (change_delta_geometry_back_client.call(service))
   {

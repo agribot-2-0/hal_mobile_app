@@ -18,6 +18,8 @@
 #include <std_msgs/Int32.h>
 #include <std_msgs/String.h>
 
+#include <thread>
+#include <functional>
 #include <sstream>
 
 #define HEADER_STRING_MOB_APP_FRAME "mobile_app_commands_link"
@@ -98,6 +100,32 @@ void callRfidScanSrv(ros::ServiceClient client,
   }
 }
 
+void steeringModeServiceHandler(ros::ServiceClient steering_mode_client, agribot_msgs::SteeringMode& service)
+{
+  if (steering_mode_client.call(service))
+  {
+    CommHandlerControl.sendSteeringModeResponseFrame(service.response.result);
+  }
+}
+
+void deltasGeometryFrontServiceHandler(ros::ServiceClient change_delta_geometry_front_client,
+                                       agribot_msgs::ChangeDeltasGeometry& service)
+{
+  if (change_delta_geometry_front_client.call(service))
+  {
+    CommHandlerControl.sendDeltasGeometryResponseFrameFront(service.response.result);
+  }
+}
+
+void deltasGeometryBackServiceHandler(ros::ServiceClient change_delta_geometry_back_client,
+                                      agribot_msgs::ChangeDeltasGeometry& service)
+{
+  if (change_delta_geometry_back_client.call(service))
+  {
+    CommHandlerControl.sendDeltasGeometryResponseFrameFront(service.response.result);
+  }
+}
+
 agribot_msgs::AgribotTool tplConfigToToolMsg(const tool_manager::TplConfig& config)
 {
   agribot_msgs::AgribotTool tool_msg;
@@ -112,6 +140,10 @@ agribot_msgs::AgribotTool tplConfigToToolMsg(const tool_manager::TplConfig& conf
 
 int main(int argc, char** argv)
 {
+  std::thread thread_steering_mode;
+  std::thread thread_deltas_geometry_front;
+  std::thread thread_deltas_geometry_back;
+  std::thread thread_rfid_scan;
   std::string name_tmp = "";
   ros::init(argc, argv, "hal_mobile_app");
   ros::NodeHandle nh;
@@ -336,10 +368,9 @@ int main(int argc, char** argv)
           service.request.cart_delta_command = agribot_msgs::ChangeDeltasGeometry::Request::NORMAL_CATERPILLAR_GEOMETRY;
         }
 
-        if (change_delta_geometry_front_client.call(service))
-        {
-          CommHandlerControl.sendDeltasGeometryResponseFrameFront(service.response.result);
-        }
+        thread_deltas_geometry_front =
+            std::thread(deltasGeometryFrontServiceHandler, change_delta_geometry_front_client, std::ref(service));
+        thread_deltas_geometry_front.detach();
       }
       if ((u16Status & RECEIVED_CHANGE_DELTA_GEOMETRY_BACK) == RECEIVED_CHANGE_DELTA_GEOMETRY_BACK)
       {
@@ -354,12 +385,11 @@ int main(int argc, char** argv)
           service.request.cart_delta_command = agribot_msgs::ChangeDeltasGeometry::Request::NORMAL_CATERPILLAR_GEOMETRY;
         }
 
-        if (change_delta_geometry_back_client.call(service))
-        {
-          CommHandlerControl.sendDeltasGeometryResponseFrameBack(service.response.result);
-        }
+        thread_deltas_geometry_back =
+            std::thread(deltasGeometryBackServiceHandler, change_delta_geometry_back_client, std::ref(service));
+        thread_deltas_geometry_back.detach();
       }
-      if ((u16Status & RECEIVED_CHANGE_ROBOT_CINEMATICS) == RECEIVED_CHANGE_ROBOT_CINEMATICS)
+      if ((u16Status & RECEIVED_CHANGE_STEERING_MODE) == RECEIVED_CHANGE_STEERING_MODE)
       {
         agribot_msgs::SteeringMode service;
         if (CommHandlerControl.getSteeringMode() == MobileAppSteeringMode::four_wheel_mode)
@@ -374,20 +404,22 @@ int main(int argc, char** argv)
         {
           service.request.steering_mode = agribot_msgs::SteeringMode::Request::CRAB;
         }
-        if (steering_mode_client.call(service))
-        {
-          CommHandlerControl.sendSteeringModeResponseFrame(service.response.result);
-        }
+        thread_steering_mode = std::thread(steeringModeServiceHandler, steering_mode_client, std::ref(service));
+        thread_steering_mode.detach();
       }
     }
     // Tool manager RFID tools scanning
     if (CommHandlerControl.bScanFrontTriggered())
     {
-      callRfidScanSrv(rfid_tags_scanner_client, rfid_tags_scanner_srv, rfid_tags_scanner_srv.request.SCAN_FRONT);
+      thread_rfid_scan = std::thread(callRfidScanSrv, rfid_tags_scanner_client, std::ref(rfid_tags_scanner_srv),
+                                     rfid_tags_scanner_srv.request.SCAN_FRONT);
+      thread_rfid_scan.detach();
     }
     if (CommHandlerControl.bScanBackTriggered())
     {
-      callRfidScanSrv(rfid_tags_scanner_client, rfid_tags_scanner_srv, rfid_tags_scanner_srv.request.SCAN_BACK);
+      thread_rfid_scan = std::thread(callRfidScanSrv, rfid_tags_scanner_client, std::ref(rfid_tags_scanner_srv),
+                                     rfid_tags_scanner_srv.request.SCAN_BACK);
+      thread_rfid_scan.detach();
     }
     // Tool control publish:
     front_tpl_config_publisher.publish(

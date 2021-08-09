@@ -190,7 +190,7 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
     else if ((MobileAppCanFrameId::change_steering_mode & addr_mask) == (message.can_id & addr_mask) &&
              message.data[MobileAppSteeringMode::request_response_byte] == MobileAppSteeringMode::request_byte_value)
     {
-      u16Status |= RECEIVED_CHANGE_ROBOT_CINEMATICS;
+      u16Status |= RECEIVED_CHANGE_STEERING_MODE;
       if (message.data[MobileAppSteeringMode::steering_mode_byte] == MobileAppSteeringMode::four_wheel_mode)
       {
         steering_mode_ = MobileAppSteeringMode::four_wheel_mode;

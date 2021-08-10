@@ -320,16 +320,14 @@ int main(int argc, char** argv)
           }
         }
       }
-            if ((u16Status & RECEIVED_LOGGING_START) == RECEIVED_LOGGING_START)
+      if ((u16Status & RECEIVED_LOGGING_START) == RECEIVED_LOGGING_START)
       {
-        ROS_INFO_STREAM("[HalMobileApp]"
-                        << " Started logging.");
+        ROS_INFO_STREAM("[HalMobileApp] Started logging.");
         system("systemctl --user start advantech-log.service");
       }
       if ((u16Status & RECEIVED_LOGGING_STOP) == RECEIVED_LOGGING_STOP)
       {
-        ROS_INFO_STREAM("[HalMobileApp]"
-                        << " Stopped logging.");
+        ROS_INFO_STREAM("[HalMobileApp] Stopped logging.");
         system("systemctl --user stop advantech-log.service");
       }
       if ((u16Status & RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT) == RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT)

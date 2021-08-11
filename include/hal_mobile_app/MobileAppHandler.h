@@ -116,7 +116,7 @@ class MobileAppHandler : public AgribotComponent
   MobileAppSteeringMode::SteeringMode getSteeringMode();
   void sendDeltasGeometryResponseFrameFront(const uint8_t ret);
   void sendDeltasGeometryResponseFrameBack(const uint8_t ret);
-  void sendSteeringModeResponseFrame(const uint8_t ret);
+  void sendSteeringModeResponseFrame(const uint8_t return_code);
   void vAssemblyStateMachineFrame(uint* uCanID, uint8_t* u8MsgBytes, uint uFrameType);
 
   virtual int configure();

@@ -592,13 +592,13 @@ void MobileAppHandler::sendDeltasGeometryResponseFrameBack(const uint8_t ret)
   can_handler_->iSendFrame(&message, false);
 }
 
-void MobileAppHandler::sendSteeringModeResponseFrame(const uint8_t ret)
+void MobileAppHandler::sendSteeringModeResponseFrame(const uint8_t return_code)
 {
   can_frame message;
   message.can_id = MobileAppCanFrameId::change_steering_mode;
   message.can_dlc = MobileAppSteeringMode::response_frame_length;
   message.data[MobileAppSteeringMode::request_response_byte] = MobileAppSteeringMode::response_byte_value;
-  message.data[MobileAppSteeringMode::return_code_byte] = static_cast<uint8_t>(ret);
+  message.data[MobileAppSteeringMode::return_code_byte] = return_code;
   can_handler_->iSendFrame(&message, false);
 }
 

@@ -103,7 +103,7 @@ void callRfidScanSrv(ros::ServiceClient client,
 void steeringModeServiceHandler(ros::ServiceClient steering_mode_client,
                                 agribot_msgs::SteeringMode& service)  // NOLINT(runtime/references)
 {
-  if (service.request.steering_mode != static_cast<uint8_t>(MobileAppSteeringMode::SteeringMode::bad_value))
+  if (service.request.steering_mode != static_cast<uint8_t>(MobileAppSteeringMode::SteeringMode::wrong_value))
   {
     if (steering_mode_client.call(service))
     {
@@ -413,7 +413,7 @@ int main(int argc, char** argv)
             service.request.steering_mode = agribot_msgs::SteeringMode::Request::CRAB;
             break;
           default:
-            service.request.steering_mode = static_cast<uint8_t>(MobileAppSteeringMode::SteeringMode::bad_value);
+            service.request.steering_mode = static_cast<uint8_t>(MobileAppSteeringMode::SteeringMode::wrong_value);
             break;
         }
         thread_steering_mode = std::thread(steeringModeServiceHandler, steering_mode_client, std::ref(service));

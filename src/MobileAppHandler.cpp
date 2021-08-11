@@ -203,7 +203,7 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
           steering_mode_ = MobileAppSteeringMode::SteeringMode::crab_mode;
           break;
         default:
-          steering_mode_ = MobileAppSteeringMode::SteeringMode::bad_value;
+          steering_mode_ = MobileAppSteeringMode::SteeringMode::wrong_value;
           break;
       }
     }

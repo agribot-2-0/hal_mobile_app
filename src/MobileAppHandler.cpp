@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Agribot. All rights reserved.
+ * Copyright (C) 2020-2021 Agribot. All rights reserved.
  */
 
 #include <hal_mobile_app/MobileAppConstants.h>
@@ -187,6 +187,26 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
                                             MobileAppDeltaGeometry::normal_caterpillar_state :
                                             MobileAppDeltaGeometry::elevated_caterpillar_state;
     }
+    else if ((MobileAppCanFrameId::change_steering_mode & addr_mask) == (message.can_id & addr_mask) &&
+             message.data[MobileAppSteeringMode::request_response_byte] == MobileAppSteeringMode::request_byte_value)
+    {
+      u16Status |= RECEIVED_CHANGE_STEERING_MODE;
+      switch (message.data[MobileAppSteeringMode::steering_mode_byte])
+      {
+        case static_cast<uint8_t>(MobileAppSteeringMode::SteeringMode::four_wheel_mode):
+          steering_mode_ = MobileAppSteeringMode::SteeringMode::four_wheel_mode;
+          break;
+        case static_cast<uint8_t>(MobileAppSteeringMode::SteeringMode::front_wheel_mode):
+          steering_mode_ = MobileAppSteeringMode::SteeringMode::front_wheel_mode;
+          break;
+        case static_cast<uint8_t>(MobileAppSteeringMode::SteeringMode::crab_mode):
+          steering_mode_ = MobileAppSteeringMode::SteeringMode::crab_mode;
+          break;
+        default:
+          steering_mode_ = MobileAppSteeringMode::SteeringMode::wrong_value;
+          break;
+      }
+    }
 
     else if (isTplPositionChangeRequested(message))
     {
@@ -317,6 +337,11 @@ bool MobileAppHandler::bGetChangeDeltaGeometryUpFront()
 bool MobileAppHandler::bGetChangeDeltaGeometryUpBack()
 {
   return changeDeltaGeometryElevatedBack;
+}
+
+MobileAppSteeringMode::SteeringMode MobileAppHandler::getSteeringMode()
+{
+  return steering_mode_;
 }
 
 void MobileAppHandler::vSetSimulationAppFrame(const uint32_t uRecFrameID,
@@ -564,6 +589,16 @@ void MobileAppHandler::sendDeltasGeometryResponseFrameBack(const uint8_t ret)
   message.can_dlc = MobileAppDeltaGeometry::delta_geometry_response_frame_length;
   message.data[MobileAppDeltaGeometry::request_response_byte] = MobileAppDeltaGeometry::response_byte_value;
   message.data[MobileAppTpl::ret_code_byte] = static_cast<uint8_t>(ret);
+  can_handler_->iSendFrame(&message, false);
+}
+
+void MobileAppHandler::sendSteeringModeResponseFrame(const uint8_t return_code)
+{
+  can_frame message;
+  message.can_id = MobileAppCanFrameId::change_steering_mode;
+  message.can_dlc = MobileAppSteeringMode::response_frame_length;
+  message.data[MobileAppSteeringMode::request_response_byte] = MobileAppSteeringMode::response_byte_value;
+  message.data[MobileAppSteeringMode::return_code_byte] = return_code;
   can_handler_->iSendFrame(&message, false);
 }
 

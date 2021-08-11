@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Agribot. All rights reserved.
+ * Copyright (C) 2020-2021 Agribot. All rights reserved.
  */
 
 #include <agribot_common/CommonFunctions/ros_common_functions.h>

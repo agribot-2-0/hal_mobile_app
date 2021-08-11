@@ -61,7 +61,8 @@ enum class SteeringMode
 {
   four_wheel_mode,
   front_wheel_mode,
-  crab_mode
+  crab_mode,
+  bad_value
 };
 
 inline constexpr uint8_t steering_mode_byte{ 1 };

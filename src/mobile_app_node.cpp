@@ -103,8 +103,16 @@ void callRfidScanSrv(ros::ServiceClient client,
 void steeringModeServiceHandler(ros::ServiceClient steering_mode_client,
                                 agribot_msgs::SteeringMode& service)  // NOLINT(runtime/references)
 {
-  if (steering_mode_client.call(service))
+  if (service.request.steering_mode != static_cast<uint8_t>(MobileAppSteeringMode::SteeringMode::bad_value))
   {
+    if (steering_mode_client.call(service))
+    {
+      CommHandlerControl.sendSteeringModeResponseFrame(service.response.result);
+    }
+  }
+  else
+  {
+    service.response.result = false;
     CommHandlerControl.sendSteeringModeResponseFrame(service.response.result);
   }
 }
@@ -393,17 +401,20 @@ int main(int argc, char** argv)
       if ((u16Status & RECEIVED_CHANGE_STEERING_MODE) == RECEIVED_CHANGE_STEERING_MODE)
       {
         agribot_msgs::SteeringMode service;
-        if (CommHandlerControl.getSteeringMode() == MobileAppSteeringMode::SteeringMode::four_wheel_mode)
+        switch (CommHandlerControl.getSteeringMode())
         {
-          service.request.steering_mode = agribot_msgs::SteeringMode::Request::FOUR_WHEEL;
-        }
-        else if (CommHandlerControl.getSteeringMode() == MobileAppSteeringMode::SteeringMode::front_wheel_mode)
-        {
-          service.request.steering_mode = agribot_msgs::SteeringMode::Request::FRONT_WHEEL;
-        }
-        else if (CommHandlerControl.getSteeringMode() == MobileAppSteeringMode::SteeringMode::crab_mode)
-        {
-          service.request.steering_mode = agribot_msgs::SteeringMode::Request::CRAB;
+          case MobileAppSteeringMode::SteeringMode::four_wheel_mode:
+            service.request.steering_mode = agribot_msgs::SteeringMode::Request::FOUR_WHEEL;
+            break;
+          case MobileAppSteeringMode::SteeringMode::front_wheel_mode:
+            service.request.steering_mode = agribot_msgs::SteeringMode::Request::FRONT_WHEEL;
+            break;
+          case MobileAppSteeringMode::SteeringMode::crab_mode:
+            service.request.steering_mode = agribot_msgs::SteeringMode::Request::CRAB;
+            break;
+          default:
+            service.request.steering_mode = static_cast<uint8_t>(MobileAppSteeringMode::SteeringMode::bad_value);
+            break;
         }
         thread_steering_mode = std::thread(steeringModeServiceHandler, steering_mode_client, std::ref(service));
         thread_steering_mode.detach();

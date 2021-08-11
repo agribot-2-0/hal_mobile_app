@@ -191,17 +191,20 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
              message.data[MobileAppSteeringMode::request_response_byte] == MobileAppSteeringMode::request_byte_value)
     {
       u16Status |= RECEIVED_CHANGE_STEERING_MODE;
-      if (message.data[MobileAppSteeringMode::steering_mode_byte] == MobileAppSteeringMode::four_wheel_mode)
+      if (message.data[MobileAppSteeringMode::steering_mode_byte] ==
+          static_cast<uint8_t>(MobileAppSteeringMode::SteeringMode::four_wheel_mode))
       {
-        steering_mode_ = MobileAppSteeringMode::four_wheel_mode;
+        steering_mode_ = MobileAppSteeringMode::SteeringMode::four_wheel_mode;
       }
-      else if (message.data[MobileAppSteeringMode::steering_mode_byte] == MobileAppSteeringMode::front_wheel_mode)
+      else if (message.data[MobileAppSteeringMode::steering_mode_byte] ==
+               static_cast<uint8_t>(MobileAppSteeringMode::SteeringMode::front_wheel_mode))
       {
-        steering_mode_ = MobileAppSteeringMode::front_wheel_mode;
+        steering_mode_ = MobileAppSteeringMode::SteeringMode::front_wheel_mode;
       }
-      else if (message.data[MobileAppSteeringMode::steering_mode_byte] == MobileAppSteeringMode::crab_mode)
+      else if (message.data[MobileAppSteeringMode::steering_mode_byte] ==
+               static_cast<uint8_t>(MobileAppSteeringMode::SteeringMode::crab_mode))
       {
-        steering_mode_ = MobileAppSteeringMode::crab_mode;
+        steering_mode_ = MobileAppSteeringMode::SteeringMode::crab_mode;
       }
     }
 
@@ -336,7 +339,7 @@ bool MobileAppHandler::bGetChangeDeltaGeometryUpBack()
   return changeDeltaGeometryElevatedBack;
 }
 
-uint8_t MobileAppHandler::getSteeringMode()
+MobileAppSteeringMode::SteeringMode MobileAppHandler::getSteeringMode()
 {
   return steering_mode_;
 }

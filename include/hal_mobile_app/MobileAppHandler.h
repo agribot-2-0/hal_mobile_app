@@ -42,7 +42,7 @@ class MobileAppHandler : public AgribotComponent
   bool bArcFreshData = false;
   bool changeDeltaGeometryElevatedFront = false;
   bool changeDeltaGeometryElevatedBack = false;
-  uint8_t steering_mode_;
+  MobileAppSteeringMode::SteeringMode steering_mode_;
   double dManualLinearVelo = 0;
   double dRadius = 0;
   std::queue<uint8_t> ProtocolErrorTypeQueue;
@@ -113,7 +113,7 @@ class MobileAppHandler : public AgribotComponent
   float fGetManualLinearVelo();
   bool bGetChangeDeltaGeometryUpFront();
   bool bGetChangeDeltaGeometryUpBack();
-  uint8_t getSteeringMode();
+  MobileAppSteeringMode::SteeringMode getSteeringMode();
   void sendDeltasGeometryResponseFrameFront(const uint8_t ret);
   void sendDeltasGeometryResponseFrameBack(const uint8_t ret);
   void sendSteeringModeResponseFrame(const uint8_t ret);

@@ -393,15 +393,15 @@ int main(int argc, char** argv)
       if ((u16Status & RECEIVED_CHANGE_STEERING_MODE) == RECEIVED_CHANGE_STEERING_MODE)
       {
         agribot_msgs::SteeringMode service;
-        if (CommHandlerControl.getSteeringMode() == MobileAppSteeringMode::four_wheel_mode)
+        if (CommHandlerControl.getSteeringMode() == MobileAppSteeringMode::SteeringMode::four_wheel_mode)
         {
           service.request.steering_mode = agribot_msgs::SteeringMode::Request::FOUR_WHEEL;
         }
-        else if (CommHandlerControl.getSteeringMode() == MobileAppSteeringMode::front_wheel_mode)
+        else if (CommHandlerControl.getSteeringMode() == MobileAppSteeringMode::SteeringMode::front_wheel_mode)
         {
           service.request.steering_mode = agribot_msgs::SteeringMode::Request::FRONT_WHEEL;
         }
-        else if (CommHandlerControl.getSteeringMode() == MobileAppSteeringMode::crab_mode)
+        else if (CommHandlerControl.getSteeringMode() == MobileAppSteeringMode::SteeringMode::crab_mode)
         {
           service.request.steering_mode = agribot_msgs::SteeringMode::Request::CRAB;
         }

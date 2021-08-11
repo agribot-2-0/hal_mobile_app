@@ -57,9 +57,13 @@ inline constexpr uint8_t normal_caterpillar_state{ 0 };
 
 namespace MobileAppSteeringMode
 {
-inline constexpr uint8_t four_wheel_mode{ 0 };
-inline constexpr uint8_t front_wheel_mode{ 1 };
-inline constexpr uint8_t crab_mode{ 2 };
+enum class SteeringMode
+{
+  four_wheel_mode,
+  front_wheel_mode,
+  crab_mode
+};
+
 inline constexpr uint8_t steering_mode_byte{ 1 };
 inline constexpr uint8_t request_response_byte{ 0 };
 inline constexpr uint8_t response_byte_value{ 1 };

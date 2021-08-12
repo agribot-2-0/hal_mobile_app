@@ -103,7 +103,7 @@ class MobileAppHandler : public AgribotComponent
   float fBackLinear;
   float fBackAngular;
 
-public:
+ public:
   MobileAppHandler();
   ~MobileAppHandler();
   void initializeCanHandler(std::unique_ptr<ICan> can_handler);

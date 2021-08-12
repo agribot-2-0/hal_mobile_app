@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Agribot. All rights reserved.
+ * Copyright (C) 2020-2021 Agribot. All rights reserved.
  */
 
 #pragma once
@@ -10,6 +10,7 @@
 #include <agribot_msgs/AgribotMobileAppFrame.h>
 #include <agribot_msgs/ToolManagerScan.h>
 #include <hal_mobile_app/TplConfigHandle/TplConfigHandle.h>
+#include <hal_mobile_app/MobileAppConstants.h>
 #include <stdio.h>
 
 #include <cmath>
@@ -43,6 +44,7 @@ class MobileAppHandler : public AgribotComponent
   bool bArcFreshData = false;
   bool changeDeltaGeometryElevatedFront = false;
   bool changeDeltaGeometryElevatedBack = false;
+  MobileAppSteeringMode::SteeringMode steering_mode_;
   double dManualLinearVelo = 0;
   double dRadius = 0;
   std::queue<uint8_t> ProtocolErrorTypeQueue;
@@ -113,8 +115,10 @@ public:
   float fGetManualLinearVelo();
   bool bGetChangeDeltaGeometryUpFront();
   bool bGetChangeDeltaGeometryUpBack();
+  MobileAppSteeringMode::SteeringMode getSteeringMode();
   void sendDeltasGeometryResponseFrameFront(const uint8_t ret);
   void sendDeltasGeometryResponseFrameBack(const uint8_t ret);
+  void sendSteeringModeResponseFrame(const uint8_t return_code);
   void vAssemblyStateMachineFrame(uint* uCanID, uint8_t* u8MsgBytes, uint uFrameType);
 
   virtual int configure();

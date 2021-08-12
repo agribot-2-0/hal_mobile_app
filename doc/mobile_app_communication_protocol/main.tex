@@ -524,6 +524,46 @@ From Advantech to Mobile Application. This frame is a callback from putting up o
     \end{tabular}
 \end{center}
 
+
+
+
+\subsection{Change steering mode}
+From Mobile Application. This frame is used to change steering mode between three states: front wheels, four wheels, crab walk.
+
+\begin{itemize}
+    \item REQ\_RES - a code number describing the meaning of the frame (request or response), in this case 0 (change request)
+    \item STE\_MOD - steering mode, 0 for four wheels mode, 1 for front wheels mode, 2 for crab walk mode
+\end{itemize}{}
+
+\textbf{Frame length = 2 bytes}
+\begin{center}
+    \begin{tabular}{| p{20pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} |}
+        \hline
+        ID   & B0   & B1 & B2 & B3 & B4 & B5 & B6 & B7 \\
+        \hline
+        0x16C & REQ\_RES & STE\_MOD  & *  & *  & *  & *  & *  & *  \\
+        \hline
+    \end{tabular}
+\end{center}
+
+From Advantech to Mobile Application. This frame is a callback from changing steering mode.
+
+\begin{itemize}
+    \item REQ\_RES - a code number describing the meaning of the frame (request or response), in this case 1 (change response)
+    \item RESULT - result of operation - 1 means success, 0 means failure
+\end{itemize}{}
+
+\textbf{Frame length = 2 bytes}
+\begin{center}
+    \begin{tabular}{| p{20pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} | p{40pt} |}
+        \hline
+        ID   & B0   & B1 & B2 & B3 & B4 & B5 & B6 & B7 \\
+        \hline
+        0x16C & REQ\_RES & RESULT  & *  & *  & *  & *  & *  & *  \\
+        \hline
+    \end{tabular}
+\end{center}
+
 \newpage
 \section{Tools control}
 

@@ -24,6 +24,7 @@ inline constexpr uint16_t tpl_response{ 0x13E };
 inline constexpr uint16_t tpl_feedback{ 0x13F };
 inline constexpr uint16_t change_delta_geometry_front{ 0x1f5 };
 inline constexpr uint16_t change_delta_geometry_back{ 0x1f6 };
+inline constexpr uint16_t change_steering_mode{ 0x16C };
 inline constexpr uint16_t logging_start{ 0x12E };
 inline constexpr uint16_t logging_stop{ 0x12F };
 }  // namespace MobileAppCanFrameId

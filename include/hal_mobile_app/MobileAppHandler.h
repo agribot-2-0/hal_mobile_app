@@ -31,6 +31,7 @@
 #define RECEIVED_ENG_ERROR (0x0001 << 9)
 #define RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT (0x0001 << 10)
 #define RECEIVED_CHANGE_DELTA_GEOMETRY_BACK (0x0001 << 11)
+#define RECEIVED_CHANGE_STEERING_MODE (0x0001 << 12)
 #define RECEIVED_LOGGING_START (0x0001 << 13)
 #define RECEIVED_LOGGING_STOP (0x0001 << 14)
 
@@ -100,7 +101,7 @@ class MobileAppHandler : public AgribotComponent
   float fBackLinear;
   float fBackAngular;
 
- public:
+public:
   MobileAppHandler();
   ~MobileAppHandler();
   void initializeCanHandler(std::unique_ptr<ICan> can_handler);

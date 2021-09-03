@@ -7,6 +7,7 @@
 #include <hal_mobile_app/MobileAppHandler.h>
 #include <agribot_common/CanBus/CanHelperFunctions.h>
 #include <hal_mobile_app/MobileAppConstants.h>
+#include <linux/can.h>
 
 int16_t getAngleSign(const int16_t preprocessed_angle)
 {
@@ -160,6 +161,31 @@ TEST(TestTplFeedbackFrame, prepareTplHeightData__When_prepare_tpl_height_frame_d
   std::vector<std::uint8_t> encoded_tpl_height = mobile_app_comm_handler.prepareHeightData(feedback);
   double decoded_tpl_height = decodeTplAngle(encoded_tpl_height);
   ASSERT_EQ(decoded_tpl_height, feedback.tpl_height);
+}
+
+TEST(TestHandlerMethods, if_can_frames_are_being_received_and_parsed_correctly)
+{
+  // Test setup:
+  std::unique_ptr<CanMock> can_test_;
+  can_test_ = std::make_unique<CanMock>();
+  EXPECT_CALL(*can_test_, iInitialize("can1")).WillOnce(::testing::Return(true));
+  can_test_->iInitialize("can1");
+  can_frame foo;
+  foo.can_id = MobileAppCanFrameId::change_delta_geometry_front;
+  foo.can_dlc = 4;
+  foo.data[MobileAppDeltaGeometry::request_response_byte] = MobileAppDeltaGeometry::request_byte_value;
+  foo.data[MobileAppDeltaGeometry::caterpillar_state_byte] = MobileAppDeltaGeometry::normal_caterpillar_state;
+  EXPECT_CALL(*can_test_, bReceiveFrame(testing::_))
+      .WillOnce(testing::DoAll(::testing::SetArgPointee<0>(foo), ::testing::Return(true)))
+      .WillOnce(::testing::Return(false));
+
+  MobileAppHandler mobile_app_comm_handler;
+  mobile_app_comm_handler.initializeCanHandler(std::move(can_test_));
+
+  mobile_app_comm_handler.vReceiveCanFrames();
+  u_int16_t status = mobile_app_comm_handler.u16ParseCanFrames();
+  ASSERT_EQ(status, RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT);
+  ASSERT_EQ(mobile_app_comm_handler.bGetChangeDeltaGeometryUpFront(), MobileAppDeltaGeometry::normal_caterpillar_state);
 }
 
 int main(int argc, char** argv)

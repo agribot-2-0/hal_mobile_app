@@ -14,7 +14,7 @@ namespace TplConfig
 // TPL config
 class TplConfigHandle
 {
- private:
+private:
   tool_manager::TplConfig config_;
 
   enum ByteIndex
@@ -26,7 +26,7 @@ class TplConfigHandle
   const struct
   {
     double pto_rpm_min = 0;
-    double pto_rpm_max = 1300;
+    double pto_rpm_max = 1000;
     double valve_flow_percent_min = 0;
     double valve_flow_percent_max = 100;
     double angle_rad_min = -0.26;  // -15 deg
@@ -43,8 +43,10 @@ class TplConfigHandle
   bool isValueWithinRange(const double val, const double limit_min, const double limit_max) const;
   double assembleAngle(int16_t angle_tmp) const;
 
- public:
-  TplConfigHandle(){}
+public:
+  TplConfigHandle()
+  {
+  }
   bool setPto(const std::vector<uint8_t>& data);
   bool setValveFlow(const std::vector<uint8_t>& data, const ValveColor sel_valve);
   bool setAngle(const std::vector<uint8_t>& data);

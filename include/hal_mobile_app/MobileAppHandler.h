@@ -101,12 +101,13 @@ class MobileAppHandler : public AgribotComponent
   float fBackLinear;
   float fBackAngular;
 
- public:
+public:
   MobileAppHandler();
   ~MobileAppHandler();
   void initializeCanHandler(std::unique_ptr<ICan> can_handler);
   void vReceiveCanFrames();
-  bool bCheckByte(uint8_t frame_byte, uint8_t expected_data);
+  template <class T>
+  bool bCheckByte(T frame_byte, T expected_data);
   bool bRfidIsAntSelected(const can_frame& msg, uint8_t sel_ant);
   uint16_t u16ParseCanFrames();
   float fGetManualRadius();
@@ -142,7 +143,7 @@ class MobileAppHandler : public AgribotComponent
   void vCreateSimStateMachineAppFrame(uint* uCanID, uint8_t* u8MsgBytes);
 
   void vSetSimulationAppFrame(const uint32_t uRecFrameID, const boost::array<unsigned char, 8> _chRecBytes);
-  void vSetSimulationMoveFrame(float fFrLin, float fFrAng, float fBkLin, float fBkAng);
+  // void vSetSimulationMoveFrame(float fFrLin, float fFrAng, float fBkLin, float fBkAng);
 
   // check if new simulation frame has been received
   bool bDataPendingSimulation();
@@ -159,7 +160,7 @@ class MobileAppHandler : public AgribotComponent
 
   // tpl control
   bool isTplPositionChangeRequested(const can_frame& message);
-  bool setTplConfig(const CanFrame& frame);
+  bool setTplConfig(const can_frame& message);
   tool_manager::TplConfig getTplConfig(const TplConfig::SelectedTpl tpl);
   void sendTplResponseFrame(const uint8_t ret_code, const uint8_t id);
 
@@ -173,3 +174,10 @@ class MobileAppHandler : public AgribotComponent
   std::vector<std::vector<std::uint8_t>> prepareTplFeedbackFrames(const tool_manager::TplConfig& feedback);
   void sendTplFeedbackFrames(const TplConfig::SelectedTpl tpl, const std::vector<std::vector<std::uint8_t>>& frame);
 };
+
+template <class T>
+bool MobileAppHandler::bCheckByte(T frame_byte, T expected_data)
+{
+  static_assert(std::is_same<T, std::uint8_t>::value);
+  return frame_byte == expected_data;
+}

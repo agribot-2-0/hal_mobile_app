@@ -31,11 +31,6 @@ void synchro_callback(const ros::TimerEvent& event)
   CommHandlerControl.vSetTriggerForController();
 }
 
-void vAppCommandsSimulationEventsCallback(const agribot_msgs::AgribotMobileAppFrame::ConstPtr& ptrMsg)
-{
-  CommHandlerControl.vSetSimulationAppFrame(ptrMsg->can_id, ptrMsg->can_byte_array);
-}
-
 void vAppTaskChoosedEventCallback(const std_msgs::String::ConstPtr& ptrMsg)
 {
   CommHandlerControl.vSetChosenTask(ptrMsg->data);
@@ -156,19 +151,6 @@ int main(int argc, char** argv)
   std::string name_tmp = "";
   ros::init(argc, argv, "hal_mobile_app");
   ros::NodeHandle nh;
-  bool bSimParam;
-  bool bSimulation = false;
-  if (nh.getParam("/agribot_commander/sim", bSimParam))
-  {
-    if (bSimParam)
-    {
-      bSimulation = true;
-    }
-    else
-    {
-      bSimulation = false;
-    }
-  }
 
   std::string selected_can;
   try
@@ -218,12 +200,6 @@ int main(int argc, char** argv)
   ros::ServiceClient steering_mode_client =
       nh.serviceClient<agribot_msgs::SteeringMode>("/agribot/kinematics_controller/steering_mode");
 
-  if (bSimulation == true)
-  {
-    ros::Subscriber AppCommandsEventsSub =
-        nh.subscribe("/agribot/app_commands_events_simulation", 1, vAppCommandsSimulationEventsCallback);
-  }
-
   // synchronization timer to achieve +-3Hz signal for kinematic control
   ros::Timer timer = nh.createTimer(ros::Duration(0.3), synchro_callback);
 
@@ -249,177 +225,161 @@ int main(int argc, char** argv)
       nh.setParam("/agribot/chosen_task_name", name_tmp);
     }
 
-    // If used in simulation
-    if (bSimulation == true)
+    ErrorIndicator.error_flag = ErrorIndicator.NO_APP_ERRORS;
+    CommHandlerControl.vReceiveCanFrames();
+    u16Status = CommHandlerControl.u16ParseCanFrames();
+    if (CommHandlerControl.vReadTriggerForController())
     {
-      CommHandlerControl.update();
-
-      if (CommHandlerControl.bDataPendingSimulation())
+      if (CommHandlerControl.bCheckFreshArcData())
       {
-        CommHandlerControl.vCreateSimStateMachineAppFrame(&uCanID, u8MsgBytes);
-        vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-        StateMachinePub.publish(FrameMsg);
+        ManualSteeringMsg.linear_velocity = CommHandlerControl.fGetManualLinearVelo();
+        ManualSteeringMsg.circle_radius = CommHandlerControl.fGetManualRadius();
+        PublishManualSteering.publish(ManualSteeringMsg);
+      }
+      else
+      {
+        ManualSteeringMsg.linear_velocity = 0;
+        ManualSteeringMsg.circle_radius = 0;
+        PublishManualSteering.publish(ManualSteeringMsg);
+      }
+      CommHandlerControl.vResetArcReadTriggers();
+      CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_MANUAL_STEERING);
+      vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
+      StateMachinePub.publish(FrameMsg);
+    }
+    if ((u16Status & RECEIVED_MANUAL_MODE_COMF) == RECEIVED_MANUAL_MODE_COMF)
+    {
+      RobMode.val = RobMode.MANUAL;
+      StateMachineModePub.publish(RobMode);
+      CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_MANUAL_MODE_COMF);
+      vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
+      StateMachinePub.publish(FrameMsg);
+    }
+    if ((u16Status & RECEIVED_AUTO_STEERING) == RECEIVED_AUTO_STEERING)
+    {
+      RobMode.val = RobMode.AUTO;
+      StateMachineModePub.publish(RobMode);
+      CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_AUTO_STEERING);
+      vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
+      StateMachinePub.publish(FrameMsg);
+    }
+    if ((u16Status & RECEIVED_PROTOCOL_ERROR) == RECEIVED_PROTOCOL_ERROR)
+    {
+      ErrorIndicator.error_flag = ErrorIndicator.APP_PROTOCOL_ERROR;
+      StateMachineErrorPub.publish(ErrorIndicator);
+      while (true)
+      {
+        CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_PROTOCOL_ERROR);
+        if (uCanID == 0)
+        {
+          break;
+        }
+        else
+        {
+          vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
+          StateMachinePub.publish(FrameMsg);
+        }
       }
     }
-    else  // If used on the machine with CAN
+    if ((u16Status & RECEIVED_MANUALSTEERING_ERROR) == RECEIVED_MANUALSTEERING_ERROR)
     {
-      ErrorIndicator.error_flag = ErrorIndicator.NO_APP_ERRORS;
-      CommHandlerControl.vReceiveCanFrames();
-      u16Status = CommHandlerControl.u16ParseCanFrames();
-      if (CommHandlerControl.vReadTriggerForController())
+      ErrorIndicator.error_flag = ErrorIndicator.APP_MANUAL_ERROR;
+      StateMachineErrorPub.publish(ErrorIndicator);
+      while (true)
       {
-        if (CommHandlerControl.bCheckFreshArcData())
+        CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_MANUALSTEERING_ERROR);
+        if (uCanID == 0)
         {
-          ManualSteeringMsg.linear_velocity = CommHandlerControl.fGetManualLinearVelo();
-          ManualSteeringMsg.circle_radius = CommHandlerControl.fGetManualRadius();
-          PublishManualSteering.publish(ManualSteeringMsg);
+          break;
         }
         else
         {
-          ManualSteeringMsg.linear_velocity = 0;
-          ManualSteeringMsg.circle_radius = 0;
-          PublishManualSteering.publish(ManualSteeringMsg);
+          vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
+          StateMachinePub.publish(FrameMsg);
         }
-        CommHandlerControl.vResetArcReadTriggers();
-        CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_MANUAL_STEERING);
-        vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-        StateMachinePub.publish(FrameMsg);
-      }
-      if ((u16Status & RECEIVED_MANUAL_MODE_COMF) == RECEIVED_MANUAL_MODE_COMF)
-      {
-        RobMode.val = RobMode.MANUAL;
-        StateMachineModePub.publish(RobMode);
-        CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_MANUAL_MODE_COMF);
-        vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-        StateMachinePub.publish(FrameMsg);
-      }
-      if ((u16Status & RECEIVED_AUTO_STEERING) == RECEIVED_AUTO_STEERING)
-      {
-        RobMode.val = RobMode.AUTO;
-        StateMachineModePub.publish(RobMode);
-        CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_AUTO_STEERING);
-        vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-        StateMachinePub.publish(FrameMsg);
-      }
-      if ((u16Status & RECEIVED_PROTOCOL_ERROR) == RECEIVED_PROTOCOL_ERROR)
-      {
-        ErrorIndicator.error_flag = ErrorIndicator.APP_PROTOCOL_ERROR;
-        StateMachineErrorPub.publish(ErrorIndicator);
-        while (true)
-        {
-          CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_PROTOCOL_ERROR);
-          if (uCanID == 0)
-          {
-            break;
-          }
-          else
-          {
-            vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-            StateMachinePub.publish(FrameMsg);
-          }
-        }
-      }
-      if ((u16Status & RECEIVED_MANUALSTEERING_ERROR) == RECEIVED_MANUALSTEERING_ERROR)
-      {
-        ErrorIndicator.error_flag = ErrorIndicator.APP_MANUAL_ERROR;
-        StateMachineErrorPub.publish(ErrorIndicator);
-        while (true)
-        {
-          CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_MANUALSTEERING_ERROR);
-          if (uCanID == 0)
-          {
-            break;
-          }
-          else
-          {
-            vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-            StateMachinePub.publish(FrameMsg);
-          }
-        }
-      }
-      if (ErrorIndicator.error_flag == ErrorIndicator.NO_APP_ERRORS)
-      {
-        // Send no error to the state machine
-        StateMachineErrorPub.publish(ErrorIndicator);
-      }
-      if ((u16Status & RECEIVED_ENG_ERROR_START) == RECEIVED_ENG_ERROR_START)
-      {
-        CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_ENG_ERROR_START);
-        vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-        StateMachinePub.publish(FrameMsg);
-      }
-      if ((u16Status & RECEIVED_ENG_ERROR) == RECEIVED_ENG_ERROR)
-      {
-        while (true)
-        {
-          CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_ENG_ERROR);
-          if (uCanID == 0)
-          {
-            break;
-          }
-          else
-          {
-            vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-            StateMachinePub.publish(FrameMsg);
-          }
-        }
-      }
-      if ((u16Status & RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT) == RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT)
-      {
-        agribot_msgs::ChangeDeltasGeometry service;
-        if (CommHandlerControl.bGetChangeDeltaGeometryUpFront())
-        {
-          service.request.cart_delta_command =
-              agribot_msgs::ChangeDeltasGeometry::Request::ELEVATED_CATERPILLAR_GEOMETRY;
-        }
-        else
-        {
-          service.request.cart_delta_command = agribot_msgs::ChangeDeltasGeometry::Request::NORMAL_CATERPILLAR_GEOMETRY;
-        }
-
-        thread_deltas_geometry_front =
-            std::thread(deltasGeometryFrontServiceHandler, change_delta_geometry_front_client, std::ref(service));
-        thread_deltas_geometry_front.detach();
-      }
-      if ((u16Status & RECEIVED_CHANGE_DELTA_GEOMETRY_BACK) == RECEIVED_CHANGE_DELTA_GEOMETRY_BACK)
-      {
-        agribot_msgs::ChangeDeltasGeometry service;
-        if (CommHandlerControl.bGetChangeDeltaGeometryUpBack())
-        {
-          service.request.cart_delta_command =
-              agribot_msgs::ChangeDeltasGeometry::Request::ELEVATED_CATERPILLAR_GEOMETRY;
-        }
-        else
-        {
-          service.request.cart_delta_command = agribot_msgs::ChangeDeltasGeometry::Request::NORMAL_CATERPILLAR_GEOMETRY;
-        }
-
-        thread_deltas_geometry_back =
-            std::thread(deltasGeometryBackServiceHandler, change_delta_geometry_back_client, std::ref(service));
-        thread_deltas_geometry_back.detach();
-      }
-      if ((u16Status & RECEIVED_CHANGE_STEERING_MODE) == RECEIVED_CHANGE_STEERING_MODE)
-      {
-        agribot_msgs::SteeringMode service;
-        switch (CommHandlerControl.getSteeringMode())
-        {
-          case MobileAppSteeringMode::SteeringMode::four_wheel_mode:
-            service.request.steering_mode = agribot_msgs::SteeringMode::Request::FOUR_WHEEL;
-            break;
-          case MobileAppSteeringMode::SteeringMode::front_wheel_mode:
-            service.request.steering_mode = agribot_msgs::SteeringMode::Request::FRONT_WHEEL;
-            break;
-          case MobileAppSteeringMode::SteeringMode::crab_mode:
-            service.request.steering_mode = agribot_msgs::SteeringMode::Request::CRAB;
-            break;
-          default:
-            service.request.steering_mode = static_cast<uint8_t>(MobileAppSteeringMode::SteeringMode::wrong_value);
-            break;
-        }
-        thread_steering_mode = std::thread(steeringModeServiceHandler, steering_mode_client, std::ref(service));
-        thread_steering_mode.detach();
       }
     }
+    if (ErrorIndicator.error_flag == ErrorIndicator.NO_APP_ERRORS)
+    {
+      // Send no error to the state machine
+      StateMachineErrorPub.publish(ErrorIndicator);
+    }
+    if ((u16Status & RECEIVED_ENG_ERROR_START) == RECEIVED_ENG_ERROR_START)
+    {
+      CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_ENG_ERROR_START);
+      vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
+      StateMachinePub.publish(FrameMsg);
+    }
+    if ((u16Status & RECEIVED_ENG_ERROR) == RECEIVED_ENG_ERROR)
+    {
+      while (true)
+      {
+        CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_ENG_ERROR);
+        if (uCanID == 0)
+        {
+          break;
+        }
+        else
+        {
+          vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
+          StateMachinePub.publish(FrameMsg);
+        }
+      }
+    }
+    if ((u16Status & RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT) == RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT)
+    {
+      agribot_msgs::ChangeDeltasGeometry service;
+      if (CommHandlerControl.bGetChangeDeltaGeometryUpFront())
+      {
+        service.request.cart_delta_command = agribot_msgs::ChangeDeltasGeometry::Request::ELEVATED_CATERPILLAR_GEOMETRY;
+      }
+      else
+      {
+        service.request.cart_delta_command = agribot_msgs::ChangeDeltasGeometry::Request::NORMAL_CATERPILLAR_GEOMETRY;
+      }
+
+      thread_deltas_geometry_front =
+          std::thread(deltasGeometryFrontServiceHandler, change_delta_geometry_front_client, std::ref(service));
+      thread_deltas_geometry_front.detach();
+    }
+    if ((u16Status & RECEIVED_CHANGE_DELTA_GEOMETRY_BACK) == RECEIVED_CHANGE_DELTA_GEOMETRY_BACK)
+    {
+      agribot_msgs::ChangeDeltasGeometry service;
+      if (CommHandlerControl.bGetChangeDeltaGeometryUpBack())
+      {
+        service.request.cart_delta_command = agribot_msgs::ChangeDeltasGeometry::Request::ELEVATED_CATERPILLAR_GEOMETRY;
+      }
+      else
+      {
+        service.request.cart_delta_command = agribot_msgs::ChangeDeltasGeometry::Request::NORMAL_CATERPILLAR_GEOMETRY;
+      }
+
+      thread_deltas_geometry_back =
+          std::thread(deltasGeometryBackServiceHandler, change_delta_geometry_back_client, std::ref(service));
+      thread_deltas_geometry_back.detach();
+    }
+    if ((u16Status & RECEIVED_CHANGE_STEERING_MODE) == RECEIVED_CHANGE_STEERING_MODE)
+    {
+      agribot_msgs::SteeringMode service;
+      switch (CommHandlerControl.getSteeringMode())
+      {
+        case MobileAppSteeringMode::SteeringMode::four_wheel_mode:
+          service.request.steering_mode = agribot_msgs::SteeringMode::Request::FOUR_WHEEL;
+          break;
+        case MobileAppSteeringMode::SteeringMode::front_wheel_mode:
+          service.request.steering_mode = agribot_msgs::SteeringMode::Request::FRONT_WHEEL;
+          break;
+        case MobileAppSteeringMode::SteeringMode::crab_mode:
+          service.request.steering_mode = agribot_msgs::SteeringMode::Request::CRAB;
+          break;
+        default:
+          service.request.steering_mode = static_cast<uint8_t>(MobileAppSteeringMode::SteeringMode::wrong_value);
+          break;
+      }
+      thread_steering_mode = std::thread(steeringModeServiceHandler, steering_mode_client, std::ref(service));
+      thread_steering_mode.detach();
+    }
+
     // Tool manager RFID tools scanning
     if (CommHandlerControl.bScanFrontTriggered())
     {

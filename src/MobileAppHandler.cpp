@@ -88,15 +88,10 @@ int16_t MobileAppHandler::i16GetTwoBytes(uint8_t u8StartBit, can_frame CanFrame)
   return ((int16_t)CanFrame.data[u8StartBit]) << 8 | ((int16_t)CanFrame.data[u8StartBit + 1]);
 }
 
-bool MobileAppHandler::bCheckByte(uint8_t frame_byte, uint8_t expected_data)
-{
-  return frame_byte == expected_data;
-}
-
 bool MobileAppHandler::bRfidIsAntSelected(const can_frame& msg, uint8_t sel_ant)
 {
   return bCheckByte(msg.data[MobileAppRfid::com_byte], MobileAppRfid::scan_trigger_frame) &&
-         bCheckByte((msg.data[MobileAppRfid::selected_antenna_byte] & sel_ant), sel_ant);
+         bCheckByte(static_cast<uint8_t>(msg.data[MobileAppRfid::selected_antenna_byte]), sel_ant);
 }
 
 uint16_t MobileAppHandler::u16ParseCanFrames()
@@ -110,13 +105,40 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
     {
       if (message.can_dlc > JOYSTICK_CONFIRMATION_FRAME_LENGTH)
       {
-        int8_t i8VeloSign = message.data[LIN_VELO_SIGN_BYTE] == 0 ? BACKWARD : FORWARD;
-        int8_t i8DirectionSign = message.data[DIRECTION_SIGN_BYTE] == 0 ? RIGHT_ARCH : LEFT_ARCH;
-        dManualLinearVelo =
-            (static_cast<float>(i16GetTwoBytes(LIN_VELO_BYTE, message)) * i8VeloSign) / LIN_VELO_PARSE_CONST;
-        dRadius = (static_cast<float>(i16GetTwoBytes(RADIUS_BYTE, message)) * i8DirectionSign) / RADIUS_PARSE_CONST;
-        bArcFreshData = true;
+        int8_t i8VeloSign;
+        int8_t i8DirectionSign;
         u16Status |= RECEIVED_MANUAL_STEERING;
+        if (message.data[LIN_VELO_SIGN_BYTE] == 0)
+        {
+          i8VeloSign = BACKWARD;
+        }
+        else if (message.data[LIN_VELO_SIGN_BYTE] == 1)
+        {
+          i8VeloSign = FORWARD;
+        }
+        else
+        {
+          u16Status = 0x00;
+        }
+        if (message.data[DIRECTION_SIGN_BYTE] == 0)
+        {
+          i8DirectionSign = RIGHT_ARCH;
+        }
+        else if (message.data[DIRECTION_SIGN_BYTE] == 1)
+        {
+          i8DirectionSign = LEFT_ARCH;
+        }
+        else
+        {
+          u16Status = 0x00;
+        }
+        if (u16Status != 0x00)
+        {
+          dManualLinearVelo =
+              (static_cast<float>(i16GetTwoBytes(LIN_VELO_BYTE, message)) * i8VeloSign) / LIN_VELO_PARSE_CONST;
+          dRadius = (static_cast<float>(i16GetTwoBytes(RADIUS_BYTE, message)) * i8DirectionSign) / RADIUS_PARSE_CONST;
+          bArcFreshData = true;
+        }
       }
     }
     else if ((MobileAppCanFrameId::protocol_handshake & addr_mask) == (message.can_id & addr_mask))
@@ -208,11 +230,9 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
       }
     }
 
-    else if (isTplPositionChangeRequested(message))
+    else if ((MobileAppCanFrameId::tpl_config & addr_mask) == (message.can_id & addr_mask))
     {
-      CanFrame frame;
-      frame.setupFrame(message);
-      if (setTplConfig(frame))
+      if (setTplConfig(message))
       {
         sendTplResponseFrame(TplReturnCode::success, message.data[MobileAppTpl::config_id_byte]);
       }
@@ -344,52 +364,9 @@ MobileAppSteeringMode::SteeringMode MobileAppHandler::getSteeringMode()
   return steering_mode_;
 }
 
-void MobileAppHandler::vSetSimulationAppFrame(const uint32_t uRecFrameID,
-                                              const boost::array<unsigned char, 8> _chRecBytes)
-{
-  iCommandId = uRecFrameID;
-  msg_byte_array[0] = _chRecBytes[0];
-  msg_byte_array[1] = _chRecBytes[1];
-  msg_byte_array[2] = _chRecBytes[2];
-  msg_byte_array[3] = _chRecBytes[3];
-  msg_byte_array[4] = _chRecBytes[4];
-  msg_byte_array[5] = _chRecBytes[5];
-  msg_byte_array[6] = _chRecBytes[6];
-  msg_byte_array[7] = _chRecBytes[7];
-  bFreshData = true;
-}
-
-// Method used to register and inform state machine about incoming msg
-void MobileAppHandler::vSetSimulationMoveFrame(float fFrLin, float fFrAng, float fBkLin, float fBkAng)
-{
-  if (!bFreshData)
-  {
-    if (fFrLin != 0 && fFrAng != 0 && fBkLin != 0 && fBkAng != 0)
-    {
-      iCommandId = 53;
-      fFrontLinear = fFrLin;
-      fFrontAngular = fFrAng;
-      fBackLinear = fBkLin;
-      fBackAngular = fBkAng;
-      bFreshData = true;
-    }
-  }
-}
-
 void MobileAppHandler::vSetChosenTask(std::string strTaskName)
 {
   strChosenTask = strTaskName;
-}
-
-void MobileAppHandler::vCreateSimStateMachineAppFrame(uint* uCanID, uint8_t* u8MsgBytes)
-{
-  if (bFreshData)
-  {
-    *uCanID = iCommandId;
-    for (int i = 0; i < 8; i++)
-      u8MsgBytes[i] = msg_byte_array[i];
-    bFreshData = false;
-  }
 }
 
 std::string MobileAppHandler::strGetTaskName()
@@ -422,11 +399,6 @@ bool MobileAppHandler::stop()
 bool MobileAppHandler::cleanup()
 {
   return true;
-}
-
-bool MobileAppHandler::bDataPendingSimulation()
-{
-  return bFreshData;
 }
 
 bool MobileAppHandler::bScanFrontTriggered()
@@ -509,14 +481,10 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
   }
 }
 
-// tpl control
-bool MobileAppHandler::isTplPositionChangeRequested(const can_frame& message)
+bool MobileAppHandler::setTplConfig(const can_frame& message)
 {
-  return (MobileAppCanFrameId::tpl_config & addr_mask) == (message.can_id & addr_mask);
-}
-
-bool MobileAppHandler::setTplConfig(const CanFrame& frame)
-{
+  CanFrame frame;
+  frame.setupFrame(message);
   using TplConfig::TplConfigId;
   using TplConfig::ValveColor;
   TplConfigId id = static_cast<TplConfigId>(frame.getData()[MobileAppTpl::config_id_byte]);
@@ -578,7 +546,7 @@ void MobileAppHandler::sendDeltasGeometryResponseFrameFront(const uint8_t ret)
   message.can_id = MobileAppCanFrameId::change_delta_geometry_front;
   message.can_dlc = MobileAppDeltaGeometry::delta_geometry_response_frame_length;
   message.data[MobileAppDeltaGeometry::request_response_byte] = MobileAppDeltaGeometry::response_byte_value;
-  message.data[MobileAppTpl::ret_code_byte] = static_cast<uint8_t>(ret);
+  message.data[MobileAppDeltaGeometry::caterpillar_state_byte] = static_cast<uint8_t>(ret);
   can_handler_->iSendFrame(&message, false);
 }
 
@@ -588,7 +556,7 @@ void MobileAppHandler::sendDeltasGeometryResponseFrameBack(const uint8_t ret)
   message.can_id = MobileAppCanFrameId::change_delta_geometry_back;
   message.can_dlc = MobileAppDeltaGeometry::delta_geometry_response_frame_length;
   message.data[MobileAppDeltaGeometry::request_response_byte] = MobileAppDeltaGeometry::response_byte_value;
-  message.data[MobileAppTpl::ret_code_byte] = static_cast<uint8_t>(ret);
+  message.data[MobileAppDeltaGeometry::caterpillar_state_byte] = static_cast<uint8_t>(ret);
   can_handler_->iSendFrame(&message, false);
 }
 

@@ -986,6 +986,10 @@ TEST_F(TestFrameParsingMethodsTpl, u16ParseCanFrames_tpl_frame_Back_tpl_Height_s
   ASSERT_EQ(request_frame.data[MobileAppTpl::config_id_byte], response_frame->data[MobileAppTpl::config_id_byte]);
 }
 
+TEST_F(TestFrameSendingMethods, vSendRfidTagsIds_Assembled_correctly_before_sending)
+{
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);

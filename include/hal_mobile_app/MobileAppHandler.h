@@ -139,14 +139,6 @@ public:
   bool bCheckFreshArcData();
   // clears the triggers
   void vResetArcReadTriggers();
-  // simulation part
-  void vCreateSimStateMachineAppFrame(uint* uCanID, uint8_t* u8MsgBytes);
-
-  void vSetSimulationAppFrame(const uint32_t uRecFrameID, const boost::array<unsigned char, 8> _chRecBytes);
-  // void vSetSimulationMoveFrame(float fFrLin, float fFrAng, float fBkLin, float fBkAng);
-
-  // check if new simulation frame has been received
-  bool bDataPendingSimulation();
 
   // tags scanning
   bool bScanFrontTriggered();

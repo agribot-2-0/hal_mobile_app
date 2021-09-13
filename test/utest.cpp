@@ -988,6 +988,82 @@ TEST_F(TestFrameParsingMethodsTpl, u16ParseCanFrames_tpl_frame_Back_tpl_Height_s
 
 TEST_F(TestFrameSendingMethods, vSendRfidTagsIds_Assembled_correctly_before_sending)
 {
+  SetUpCanMock();
+  SetUpMockFunctionCalls();
+  SetUpMobileAppHandler();
+  std::vector<std::vector<uint8_t>> ids;
+  ids.push_back({ 1 });
+
+  mobile_app_comm_handler.vSendRfidTagsIds(MobileAppRfid::front_ant_selected, ids);
+  ASSERT_EQ(sent_frame->can_id, MobileAppCanFrameId::rfid);
+  ASSERT_EQ(sent_frame->data[MobileAppRfid::com_byte], MobileAppRfid::detected_tags_start_frame);
+  ASSERT_EQ(sent_frame->data[MobileAppRfid::selected_antenna_byte], MobileAppRfid::front_ant_selected);
+  ASSERT_EQ(sent_frame->data[MobileAppRfid::epc_len_byte], ids[0].size());
+}
+
+TEST_F(TestFrameSendingMethods, vSendRfidTagsIds_No_ids)
+{
+  SetUpCanMock();
+  SetUpMockFunctionCalls();
+  SetUpMobileAppHandler();
+  std::vector<std::vector<uint8_t>> ids;
+
+  mobile_app_comm_handler.vSendRfidTagsIds(MobileAppRfid::front_ant_selected, ids);
+  ASSERT_EQ(sent_frame->can_id, MobileAppCanFrameId::rfid);
+  ASSERT_EQ(sent_frame->can_dlc, 3);
+  ASSERT_EQ(sent_frame->data[MobileAppRfid::com_byte], MobileAppRfid::detected_tags_start_frame);
+  ASSERT_EQ(sent_frame->data[MobileAppRfid::selected_antenna_byte], MobileAppRfid::front_ant_selected);
+  ASSERT_EQ(sent_frame->data[MobileAppRfid::epc_len_byte], ids.size());
+}
+
+TEST_F(TestFrameSendingMethods, vSendRfidTagsIds_Assembled_correctly_Bigger_dataset)
+{
+  std::vector<std::shared_ptr<can_frame>> received_frame;
+  for (std::uint8_t i = 0; i < 8; i++)
+  {
+    received_frame.push_back(std::make_shared<can_frame>());
+  }
+  SetUpCanMock();
+  EXPECT_CALL(*can_device_, iSendFrame(testing::_, false))
+      .WillOnce(testing::SaveArgPointee<0>(received_frame[0]))
+      .WillOnce(testing::SaveArgPointee<0>(received_frame[1]))
+      .WillOnce(testing::SaveArgPointee<0>(received_frame[2]))
+      .WillOnce(testing::SaveArgPointee<0>(received_frame[3]))
+      .WillOnce(testing::SaveArgPointee<0>(received_frame[4]))
+      .WillOnce(testing::SaveArgPointee<0>(received_frame[5]))
+      .WillOnce(testing::SaveArgPointee<0>(received_frame[6]))
+      .WillOnce(testing::SaveArgPointee<0>(received_frame[7]));
+  SetUpMobileAppHandler();
+  std::vector<std::vector<uint8_t>> ids;
+  ids.push_back({ 1 });
+  ids.push_back({ 1 });
+  ids.push_back({ 1 });
+  ids.push_back({ 1 });
+  ids.push_back({ 1 });
+  ids.push_back({ 1 });
+  ids.push_back({ 1 });
+  ids.push_back({ 1 });
+
+  expected_frame.can_id = MobileAppCanFrameId::rfid;
+  expected_frame.can_dlc = MobileAppRfid::tag_start_frame_size;
+
+  mobile_app_comm_handler.vSendRfidTagsIds(MobileAppRfid::front_ant_selected, ids);
+  for (std::uint8_t i = 0; i < 8; i++)
+  {
+    expected_frame.data[MobileAppRfid::com_byte] = static_cast<std::uint8_t>(2);
+    if (i > 7)
+    {
+      expected_frame.data[MobileAppRfid::com_byte] = static_cast<std::uint8_t>(3);
+    }
+    expected_frame.data[MobileAppRfid::selected_antenna_byte] = MobileAppRfid::front_ant_selected;
+    expected_frame.data[MobileAppRfid::epc_len_byte] = ids[i].size();
+    ASSERT_EQ(expected_frame.can_id, received_frame[i]->can_id);
+    ASSERT_EQ(expected_frame.can_dlc, received_frame[i]->can_dlc);
+    ASSERT_EQ(expected_frame.data[MobileAppRfid::com_byte], received_frame[i]->data[MobileAppRfid::com_byte]);
+    ASSERT_EQ(expected_frame.data[MobileAppRfid::selected_antenna_byte],
+              received_frame[i]->data[MobileAppRfid::selected_antenna_byte]);
+    ASSERT_EQ(expected_frame.data[MobileAppRfid::epc_len_byte], received_frame[i]->data[MobileAppRfid::epc_len_byte]);
+  }
 }
 
 int main(int argc, char** argv)

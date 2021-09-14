@@ -3,13 +3,13 @@
  */
 
 #include <gtest/gtest.h>
-#include <cmath>
 #include <agribot_common/CanBus/test/CanMock.h>
 #include <hal_mobile_app/MobileAppHandler.h>
 #include <agribot_common/CanBus/CanHelperFunctions.h>
 #include <agribot_msgs/ChangeDeltasGeometryResponse.h>
 #include <hal_mobile_app/MobileAppConstants.h>
 #include <linux/can.h>
+#include <cmath>
 
 int16_t getAngleSign(const int16_t preprocessed_angle)
 {

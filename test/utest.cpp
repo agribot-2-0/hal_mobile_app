@@ -2,6 +2,7 @@
  * Copyright (C) 2021 Agribot. All rights reserved.
  */
 
+#include <cmath>
 #include <gtest/gtest.h>
 #include <agribot_common/CanBus/test/CanMock.h>
 #include <hal_mobile_app/MobileAppHandler.h>
@@ -986,19 +987,30 @@ TEST_F(TestFrameParsingMethodsTpl, u16ParseCanFrames_tpl_frame_Back_tpl_Height_s
   ASSERT_EQ(request_frame.data[MobileAppTpl::config_id_byte], response_frame->data[MobileAppTpl::config_id_byte]);
 }
 
-TEST_F(TestFrameSendingMethods, vSendRfidTagsIds_Assembled_correctly_before_sending)
+TEST_F(TestFrameSendingMethods, vSendRfidTagsIds_Separate_header_and_data_messages)
 {
+  std::vector<std::shared_ptr<can_frame>> sent_frame;
+  for (std::uint8_t i = 0; i < 2; i++)
+  {
+    sent_frame.push_back(std::make_shared<can_frame>());
+  }
   SetUpCanMock();
-  SetUpMockFunctionCalls();
+  EXPECT_CALL(*can_device_, iSendFrame(testing::_, false))
+      .WillOnce(testing::SaveArgPointee<0>(sent_frame[0]))
+      .WillOnce(testing::SaveArgPointee<0>(sent_frame[1]));
   SetUpMobileAppHandler();
   std::vector<std::vector<uint8_t>> ids;
   ids.push_back({ 1 });
 
   mobile_app_comm_handler.vSendRfidTagsIds(MobileAppRfid::front_ant_selected, ids);
-  ASSERT_EQ(sent_frame->can_id, MobileAppCanFrameId::rfid);
-  ASSERT_EQ(sent_frame->data[MobileAppRfid::com_byte], MobileAppRfid::detected_tags_start_frame);
-  ASSERT_EQ(sent_frame->data[MobileAppRfid::selected_antenna_byte], MobileAppRfid::front_ant_selected);
-  ASSERT_EQ(sent_frame->data[MobileAppRfid::epc_len_byte], ids[0].size());
+  ASSERT_EQ(sent_frame[0]->can_id, MobileAppCanFrameId::rfid);
+  ASSERT_EQ(sent_frame[0]->data[MobileAppRfid::com_byte], MobileAppRfid::detected_tags_start_frame);
+  ASSERT_EQ(sent_frame[0]->data[MobileAppRfid::selected_antenna_byte], MobileAppRfid::front_ant_selected);
+  ASSERT_EQ(sent_frame[0]->data[MobileAppRfid::epc_len_byte], ids[0].size());
+  ASSERT_EQ(sent_frame[1]->can_id, MobileAppCanFrameId::rfid);
+  ASSERT_EQ(sent_frame[1]->data[MobileAppRfid::com_byte],
+            static_cast<uint8_t>(MobileAppRfid::detected_tags_start_frame + 1));
+  ASSERT_EQ(sent_frame[1]->data[1], ids[0][0]);
 }
 
 TEST_F(TestFrameSendingMethods, vSendRfidTagsIds_No_ids)
@@ -1016,54 +1028,59 @@ TEST_F(TestFrameSendingMethods, vSendRfidTagsIds_No_ids)
   ASSERT_EQ(sent_frame->data[MobileAppRfid::epc_len_byte], ids.size());
 }
 
-TEST_F(TestFrameSendingMethods, vSendRfidTagsIds_Assembled_correctly_Bigger_dataset)
+TEST_F(TestFrameSendingMethods, vSendRfidTagsIds_Assembled_correctly_Vector_with_multiple_bytes)
 {
-  std::vector<std::shared_ptr<can_frame>> received_frame;
-  for (std::uint8_t i = 0; i < 8; i++)
+  std::vector<std::vector<uint8_t>> ids;
+  ids.push_back({ 1, 2, 3, 4, 5, 6, 7, 8, 9 });
+  int number_of_sent_frames = (std::ceil(ids[0].size() / 7.0) + 1);
+  std::vector<std::shared_ptr<can_frame>> sent_frame;
+  for (int i = 0; i < number_of_sent_frames; i++)
   {
-    received_frame.push_back(std::make_shared<can_frame>());
+    sent_frame.push_back(std::make_shared<can_frame>());
   }
   SetUpCanMock();
   EXPECT_CALL(*can_device_, iSendFrame(testing::_, false))
-      .WillOnce(testing::SaveArgPointee<0>(received_frame[0]))
-      .WillOnce(testing::SaveArgPointee<0>(received_frame[1]))
-      .WillOnce(testing::SaveArgPointee<0>(received_frame[2]))
-      .WillOnce(testing::SaveArgPointee<0>(received_frame[3]))
-      .WillOnce(testing::SaveArgPointee<0>(received_frame[4]))
-      .WillOnce(testing::SaveArgPointee<0>(received_frame[5]))
-      .WillOnce(testing::SaveArgPointee<0>(received_frame[6]))
-      .WillOnce(testing::SaveArgPointee<0>(received_frame[7]));
+      .WillOnce(testing::SaveArgPointee<0>(sent_frame[0]))
+      .WillOnce(testing::SaveArgPointee<0>(sent_frame[1]))
+      .WillOnce(testing::SaveArgPointee<0>(sent_frame[2]));
   SetUpMobileAppHandler();
-  std::vector<std::vector<uint8_t>> ids;
-  ids.push_back({ 1 });
-  ids.push_back({ 1 });
-  ids.push_back({ 1 });
-  ids.push_back({ 1 });
-  ids.push_back({ 1 });
-  ids.push_back({ 1 });
-  ids.push_back({ 1 });
-  ids.push_back({ 1 });
 
   expected_frame.can_id = MobileAppCanFrameId::rfid;
   expected_frame.can_dlc = MobileAppRfid::tag_start_frame_size;
+  expected_frame.data[MobileAppRfid::epc_len_byte] = ids[0].size();
+  expected_frame.data[MobileAppRfid::com_byte] = MobileAppRfid::detected_tags_start_frame;
+  expected_frame.data[MobileAppRfid::selected_antenna_byte] = MobileAppRfid::front_ant_selected;
 
   mobile_app_comm_handler.vSendRfidTagsIds(MobileAppRfid::front_ant_selected, ids);
-  for (std::uint8_t i = 0; i < 8; i++)
-  {
-    expected_frame.data[MobileAppRfid::com_byte] = static_cast<std::uint8_t>(2);
-    if (i > 7)
-    {
-      expected_frame.data[MobileAppRfid::com_byte] = static_cast<std::uint8_t>(3);
-    }
-    expected_frame.data[MobileAppRfid::selected_antenna_byte] = MobileAppRfid::front_ant_selected;
-    expected_frame.data[MobileAppRfid::epc_len_byte] = ids[i].size();
-    ASSERT_EQ(expected_frame.can_id, received_frame[i]->can_id);
-    ASSERT_EQ(expected_frame.can_dlc, received_frame[i]->can_dlc);
-    ASSERT_EQ(expected_frame.data[MobileAppRfid::com_byte], received_frame[i]->data[MobileAppRfid::com_byte]);
-    ASSERT_EQ(expected_frame.data[MobileAppRfid::selected_antenna_byte],
-              received_frame[i]->data[MobileAppRfid::selected_antenna_byte]);
-    ASSERT_EQ(expected_frame.data[MobileAppRfid::epc_len_byte], received_frame[i]->data[MobileAppRfid::epc_len_byte]);
-  }
+
+  ASSERT_EQ(expected_frame.can_id, sent_frame[0]->can_id);
+  ASSERT_EQ(expected_frame.can_dlc, sent_frame[0]->can_dlc);
+  ASSERT_EQ(expected_frame.data[MobileAppRfid::com_byte], sent_frame[0]->data[MobileAppRfid::com_byte]);
+  ASSERT_EQ(expected_frame.data[MobileAppRfid::epc_len_byte], sent_frame[0]->data[MobileAppRfid::epc_len_byte]);
+  ASSERT_EQ(expected_frame.data[MobileAppRfid::selected_antenna_byte],
+            sent_frame[0]->data[MobileAppRfid::selected_antenna_byte]);
+
+  expected_frame.can_dlc = MobileAppRfid::tag_data_frame_size;
+  expected_frame.data[MobileAppRfid::com_byte] = MobileAppRfid::detected_tags_start_frame + 1;
+  expected_frame.data[1] = ids[0][0];
+  expected_frame.data[7] = ids[0][6];
+
+  ASSERT_EQ(expected_frame.can_id, sent_frame[1]->can_id);
+  ASSERT_EQ(expected_frame.can_dlc, sent_frame[1]->can_dlc);
+  ASSERT_EQ(expected_frame.data[MobileAppRfid::com_byte], sent_frame[1]->data[MobileAppRfid::com_byte]);
+  ASSERT_EQ(expected_frame.data[1], sent_frame[1]->data[1]);
+  ASSERT_EQ(expected_frame.data[7], sent_frame[1]->data[7]);
+
+  expected_frame.data[MobileAppRfid::com_byte] = MobileAppRfid::detected_tags_start_frame + 2;
+  expected_frame.data[1] = ids[0][7];
+  expected_frame.data[2] = ids[0][8];
+  expected_frame.data[7] = 0;
+
+  ASSERT_EQ(expected_frame.can_id, sent_frame[2]->can_id);
+  ASSERT_EQ(expected_frame.can_dlc, sent_frame[2]->can_dlc);
+  ASSERT_EQ(expected_frame.data[MobileAppRfid::com_byte], sent_frame[2]->data[MobileAppRfid::com_byte]);
+  ASSERT_EQ(expected_frame.data[1], sent_frame[2]->data[1]);
+  ASSERT_EQ(expected_frame.data[7], sent_frame[2]->data[7]);
 }
 
 int main(int argc, char** argv)

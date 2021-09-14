@@ -449,7 +449,6 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
     com = MobileAppRfid::detected_tags_start_frame;
     cnt = 0;
     // Start frame with com = 2. It contains information about EPC length and selected antenna
-    message.can_id = MobileAppCanFrameId::rfid;
     setRfidFrameHeader(message, MobileAppRfid::tag_start_frame_size, com, sel_ant, tag_id.size());
     usleep(MobileAppRfid::frame_send_delay);
     can_handler_->iSendFrame(&message, false);
@@ -460,7 +459,7 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
     {
       ++cnt;
       message.data[cnt % MobileAppRfid::tag_data_frame_size] = epc_byte;
-      // if data frame payload exceeded
+      // if data frame payload exceeded - every 7 bytes send frame
       if (cnt % MobileAppRfid::data_frame_epc_payload == 0)
       {
         ++com;  //  increment com byte
@@ -470,8 +469,8 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
         bzero(message.data, sizeof(uint8_t) * MobileAppRfid::tag_data_frame_size);
         ++cnt;
       }
-    }
-    if (--cnt % MobileAppRfid::data_frame_epc_payload != 0)
+    }  // send remaining frame - less than 7 bytes
+    if ((--cnt % MobileAppRfid::data_frame_epc_payload != 0) || (cnt == 0))
     {
       ++com;  //  increment com byte
       message.data[MobileAppRfid::com_byte] = com;

@@ -2,8 +2,8 @@
  * Copyright (C) 2021 Agribot. All rights reserved.
  */
 
-#include <cmath>
 #include <gtest/gtest.h>
+#include <cmath>
 #include <agribot_common/CanBus/test/CanMock.h>
 #include <hal_mobile_app/MobileAppHandler.h>
 #include <agribot_common/CanBus/CanHelperFunctions.h>

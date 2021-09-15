@@ -62,17 +62,6 @@ void backToolFeedbackCallback(const agribot_msgs::AgribotTool& msg)
   CommHandlerControl.sendTplFeedbackFrames(TplConfig::SelectedTpl::back, frames_data);
 }
 
-void vFillTheMessageObject(agribot_msgs::AgribotMobileAppFrame* ptrFrameMsg, uint uCanID, uint8_t* u8MsgBytes)
-{
-  ptrFrameMsg->header.frame_id = HEADER_STRING_MOB_APP_FRAME;
-  ptrFrameMsg->header.stamp = ros::Time::now();
-  ptrFrameMsg->can_id = uCanID;
-  for (int i = 0; i < 8; i++)
-  {
-    ptrFrameMsg->can_byte_array[i] = u8MsgBytes[i];
-  }
-}
-
 auto castMsgVectorToStdVec(std::vector<agribot_msgs::Tag>& msg_vec)  // NOLINT(runtime/references)
 {
   std::vector<std::vector<uint8_t>> std_vec;
@@ -205,9 +194,6 @@ int main(int argc, char** argv)
   // workaround feature
   // for instant sending of the default configuration
   // without the option to choose
-  std_msgs::String task_name;
-  uint8_t u8MsgBytes[8];
-  uint uCanID = 0;
   uint16_t u16Status = 0x0000;
 
   while (ros::ok())

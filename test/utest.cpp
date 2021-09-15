@@ -476,54 +476,6 @@ TEST_F(TestFrameParsingMethods, u16ParseCanFrames_incorrect_manual_steering_fram
   ASSERT_EQ(status, 0x00);
 }
 
-TEST_F(TestFrameParsingMethods, u16ParseCanFrames_protocol_handshake_frame_Parsed_correctly)
-{
-  received_frame.can_id = MobileAppCanFrameId::protocol_handshake;
-  SetUpCanMock();
-  SetUpMockFunctionCalls();
-  SetUpMobileAppHandler();
-
-  // Test:
-  u_int16_t status = mobile_app_comm_handler.u16ParseCanFrames();
-  ASSERT_EQ(status, RECEIVED_HANDSHAKE);
-}
-
-TEST_F(TestFrameParsingMethods, u16ParseCanFrames_protocol_heartbeat_frame_Parsed_correctly)
-{
-  received_frame.can_id = MobileAppCanFrameId::protocol_hb;
-  SetUpCanMock();
-  SetUpMockFunctionCalls();
-  SetUpMobileAppHandler();
-
-  // Test:
-  u_int16_t status = mobile_app_comm_handler.u16ParseCanFrames();
-  ASSERT_EQ(status, RECEIVED_HEARTBEAT);
-}
-
-TEST_F(TestFrameParsingMethods, u16ParseCanFrames_protocol_manual_steering_frame_Parsed_correctly)
-{
-  received_frame.can_id = MobileAppCanFrameId::protocol_manual_steering;
-  SetUpCanMock();
-  SetUpMockFunctionCalls();
-  SetUpMobileAppHandler();
-
-  // Test:
-  u_int16_t status = mobile_app_comm_handler.u16ParseCanFrames();
-  ASSERT_EQ(status, RECEIVED_MANUAL_MODE_COMF);
-}
-
-TEST_F(TestFrameParsingMethods, u16ParseCanFrames_protocol_automatic_steering_frame_Parsed_correctly)
-{
-  received_frame.can_id = MobileAppCanFrameId::protocol_automatic_steering;
-  SetUpCanMock();
-  SetUpMockFunctionCalls();
-  SetUpMobileAppHandler();
-
-  // Test:
-  u_int16_t status = mobile_app_comm_handler.u16ParseCanFrames();
-  ASSERT_EQ(status, RECEIVED_AUTO_STEERING);
-}
-
 TEST_F(TestFrameParsingMethods, u16ParseCanFrames_protocol_error_frame_Parsed_correctly)
 {
   received_frame.can_id = MobileAppCanFrameId::protocol_error;
@@ -552,39 +504,6 @@ TEST_F(TestFrameParsingMethods, u16ParseCanFrames_protocol_man_error_frame_Parse
   // Test:
   u_int16_t status = mobile_app_comm_handler.u16ParseCanFrames();
   ASSERT_EQ(status, RECEIVED_MANUALSTEERING_ERROR);
-}
-
-TEST_F(TestFrameParsingMethods, u16ParseCanFrames_protocol_eng_error_start_frame_Parsed_correctly)
-{
-  received_frame.can_id = MobileAppCanFrameId::protocol_eng_error_start;
-  received_frame.can_dlc = 2;
-  received_frame.data[ENG_ERR_NUM_TOTAL_BYTE] = 1U;
-  received_frame.data[LAMP_STATE_BYTE] = 1U;
-  SetUpCanMock();
-  SetUpMockFunctionCalls();
-  SetUpMobileAppHandler();
-
-  // Test:
-  u_int16_t status = mobile_app_comm_handler.u16ParseCanFrames();
-  ASSERT_EQ(status, RECEIVED_ENG_ERROR_START);
-}
-
-TEST_F(TestFrameParsingMethods, u16ParseCanFrames_protocol_eng_error_frame_Parsed_correctly)
-{
-  received_frame.can_id = MobileAppCanFrameId::protocol_eng_error;
-  received_frame.can_dlc = 7;
-  received_frame.data[ENG_ERROR_NUM_BYTE] = 1U;
-  received_frame.data[SPN_FIRST_BYTE] = 1U;
-  received_frame.data[FMI_BYTE] = 1U;
-  received_frame.data[OCC_BYTE] = 1U;
-  received_frame.data[ENG_ERR_STATE_BYTE] = 1u;
-  SetUpCanMock();
-  SetUpMockFunctionCalls();
-  SetUpMobileAppHandler();
-
-  // Test:
-  u_int16_t status = mobile_app_comm_handler.u16ParseCanFrames();
-  ASSERT_EQ(status, RECEIVED_ENG_ERROR);
 }
 
 TEST_F(TestFrameParsingMethods, u16ParseCanFrames_steering_mode_frame_crab_mode_Parsed_correctly)

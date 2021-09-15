@@ -165,6 +165,7 @@ int main(int argc, char** argv)
   std::unique_ptr<Can> can_handler = std::make_unique<Can>();
   can_handler->iInitialize(selected_can.c_str());
   CommHandlerControl.initializeCanHandler(std::move(can_handler));
+
   // Publish cmd_vel_manual from application commands
   ros::Publisher PublishManualSteering = nh.advertise<agribot_msgs::AgribotManualControl>("/cmd_vel_manual", 1);
   // Topic used to communicate change of state to the state machine
@@ -205,6 +206,8 @@ int main(int argc, char** argv)
   // for instant sending of the default configuration
   // without the option to choose
   std_msgs::String task_name;
+  uint8_t u8MsgBytes[8];
+  uint uCanID = 0;
   uint16_t u16Status = 0x0000;
 
   while (ros::ok())
@@ -248,14 +251,6 @@ int main(int argc, char** argv)
     {
       // Send no error to the state machine
       StateMachineErrorPub.publish(ErrorIndicator);
-    }
-    if ((u16Status & RECEIVED_ENG_ERROR_START) == RECEIVED_ENG_ERROR_START)
-    {
-      ///// shouldnt this be sent to StateMachineErrorPub
-    }
-    if ((u16Status & RECEIVED_ENG_ERROR) == RECEIVED_ENG_ERROR)
-    {
-      ///// shouldnt this be sent to StateMachineErrorPub
     }
     if ((u16Status & RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT) == RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT)
     {

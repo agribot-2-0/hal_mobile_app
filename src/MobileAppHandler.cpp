@@ -141,22 +141,6 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
         }
       }
     }
-    else if ((MobileAppCanFrameId::protocol_handshake & addr_mask) == (message.can_id & addr_mask))
-    {
-      u16Status |= RECEIVED_HANDSHAKE;
-    }
-    else if ((MobileAppCanFrameId::protocol_hb & addr_mask) == (message.can_id & addr_mask))
-    {
-      u16Status |= RECEIVED_HEARTBEAT;
-    }
-    else if ((MobileAppCanFrameId::protocol_manual_steering & addr_mask) == (message.can_id & addr_mask))
-    {
-      u16Status |= RECEIVED_MANUAL_MODE_COMF;
-    }
-    else if ((MobileAppCanFrameId::protocol_automatic_steering & addr_mask) == (message.can_id & addr_mask))
-    {
-      u16Status |= RECEIVED_AUTO_STEERING;
-    }
     else if ((MobileAppCanFrameId::protocol_error & addr_mask) == (message.can_id & addr_mask))
     {
       ProtocolErrorTypeQueue.push(message.data[ERROR_TYPE_BYTE]);
@@ -168,23 +152,6 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
       ManualErrorTypeQueue.push(message.data[ERROR_TYPE_BYTE]);
       ManualErrorSpecificQueue.push(message.data[ERROR_SPECIFIC_BYTE]);
       u16Status |= RECEIVED_MANUALSTEERING_ERROR;
-    }
-    else if ((MobileAppCanFrameId::protocol_eng_error_start & addr_mask) == (message.can_id & addr_mask))
-    {
-      CodesTotal = message.data[ENG_ERR_NUM_TOTAL_BYTE];
-      LampState = message.data[LAMP_STATE_BYTE];
-      u16Status |= RECEIVED_ENG_ERROR_START;
-    }
-    else if ((MobileAppCanFrameId::protocol_eng_error & addr_mask) == (message.can_id & addr_mask))
-    {
-      CodeNumberQueue.push(message.data[ENG_ERROR_NUM_BYTE]);
-      uint SPN = (message.data[SPN_FIRST_BYTE] + message.data[SPN_FIRST_BYTE + 1])
-                 << (8 + message.data[SPN_FIRST_BYTE + 2]) << 16;
-      SPNQueue.push(SPN);
-      FMIQueue.push(message.data[FMI_BYTE]);
-      OCCQueue.push(message.data[OCC_BYTE]);
-      EngErrStateQueue.push(message.data[ENG_ERR_STATE_BYTE]);
-      u16Status |= RECEIVED_ENG_ERROR;
     }
     else if ((MobileAppCanFrameId::rfid & addr_mask) == (message.can_id & addr_mask))
     {
@@ -335,7 +302,7 @@ void MobileAppHandler::setRfidFrameHeader(can_frame& msg,  // NOLINT(runtime/ref
   msg.can_id = MobileAppCanFrameId::rfid;
   msg.can_dlc = frame_size;
   msg.data[MobileAppRfid::com_byte] = com_val;
-  msg.data[MobileAppRfid::sel_ant_byte] = selected_antenna;
+  msg.data[MobileAppRfid::selected_antenna_byte] = selected_antenna;
   msg.data[MobileAppRfid::epc_len_byte] = epc_words_cnt;  // number of EPC bytes
 }
 

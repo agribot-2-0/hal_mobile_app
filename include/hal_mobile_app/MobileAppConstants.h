@@ -9,15 +9,8 @@
 namespace MobileAppCanFrameId
 {
 inline constexpr uint16_t protocol_ark{ 0x035 };
-inline constexpr uint16_t protocol_hb{ 0x001 };
-inline constexpr uint16_t protocol_handshake{ 0x00A };
-inline constexpr uint16_t protocol_manual_steering{ 0x015 };
-inline constexpr uint16_t protocol_automatic_steering{ 0x01F };
 inline constexpr uint16_t protocol_error{ 0x0C8 };
 inline constexpr uint16_t protocol_man_error{ 0x0C9 };  // man - manual
-inline constexpr uint16_t protocol_configuration{ 0x96 };
-inline constexpr uint16_t protocol_eng_error_start{ 0x104 };
-inline constexpr uint16_t protocol_eng_error{ 0x105 };
 inline constexpr uint16_t rfid{ 0x1f4 };
 inline constexpr uint16_t tpl_config{ 0x13D };
 inline constexpr uint16_t tpl_response{ 0x13E };
@@ -33,7 +26,6 @@ inline constexpr uint32_t frame_send_delay{ 50000 };
 
 inline constexpr uint8_t selected_antenna_byte{ 0x01 };
 inline constexpr uint8_t com_byte{ 0 };
-inline constexpr uint8_t sel_ant_byte{ 1 };
 inline constexpr uint8_t epc_len_byte{ 2 };
 inline constexpr uint8_t scan_trigger_frame{ 0x01 };
 inline constexpr uint8_t detected_tags_start_frame{ 0x02 };

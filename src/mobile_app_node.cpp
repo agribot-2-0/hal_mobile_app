@@ -165,14 +165,8 @@ int main(int argc, char** argv)
   std::unique_ptr<Can> can_handler = std::make_unique<Can>();
   can_handler->iInitialize(selected_can.c_str());
   CommHandlerControl.initializeCanHandler(std::move(can_handler));
-  // Use this topic to communicate application events
-  // with the robot state machine
-  ros::Publisher StateMachinePub =
-      nh.advertise<agribot_msgs::AgribotMobileAppFrame>("agribot/mobile_app_communication", 1000);
   // Publish cmd_vel_manual from application commands
   ros::Publisher PublishManualSteering = nh.advertise<agribot_msgs::AgribotManualControl>("/cmd_vel_manual", 1);
-  // Topic used to communicate change of state to the state machine
-  ros::Publisher StateMachineModePub = nh.advertise<industrial_msgs::RobotMode>("/agribot/state_machine/mode", 1);
   // Topic used to communicate change of state to the state machine
   ros::Publisher StateMachineErrorPub =
       nh.advertise<agribot_msgs::AgribotAppErrorFlag>("/agribot/state_machine/error", 2);
@@ -182,8 +176,6 @@ int main(int argc, char** argv)
   ros::Subscriber tpl_front_sub = nh.subscribe("/agribot/encoder/tool/front", 1, frontToolFeedbackCallback);
   // Topic for feedback from back TPL:
   ros::Subscriber tpl_back_sub = nh.subscribe("/agribot/encoder/tool/back", 1, backToolFeedbackCallback);
-  // Topic used to read the path name from task config file
-  ros::Publisher StateMachineTaskPub = nh.advertise<std_msgs::String>("/agribot/state_machine/task", 1);
   // The client of scan tags service
   ros::ServiceClient rfid_tags_scanner_client =
       nh.serviceClient<agribot_msgs::ToolManagerScan>("agribot/tool_management/scan");
@@ -213,8 +205,6 @@ int main(int argc, char** argv)
   // for instant sending of the default configuration
   // without the option to choose
   std_msgs::String task_name;
-  uint8_t u8MsgBytes[8];
-  uint uCanID = 0;
   uint16_t u16Status = 0x0000;
 
   while (ros::ok())
@@ -243,61 +233,16 @@ int main(int argc, char** argv)
         PublishManualSteering.publish(ManualSteeringMsg);
       }
       CommHandlerControl.vResetArcReadTriggers();
-      CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_MANUAL_STEERING);
-      vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-      StateMachinePub.publish(FrameMsg);
-    }
-    if ((u16Status & RECEIVED_MANUAL_MODE_COMF) == RECEIVED_MANUAL_MODE_COMF)
-    {
-      RobMode.val = RobMode.MANUAL;
-      StateMachineModePub.publish(RobMode);
-      CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_MANUAL_MODE_COMF);
-      vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-      StateMachinePub.publish(FrameMsg);
-    }
-    if ((u16Status & RECEIVED_AUTO_STEERING) == RECEIVED_AUTO_STEERING)
-    {
-      RobMode.val = RobMode.AUTO;
-      StateMachineModePub.publish(RobMode);
-      CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_AUTO_STEERING);
-      vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-      StateMachinePub.publish(FrameMsg);
     }
     if ((u16Status & RECEIVED_PROTOCOL_ERROR) == RECEIVED_PROTOCOL_ERROR)
     {
       ErrorIndicator.error_flag = ErrorIndicator.APP_PROTOCOL_ERROR;
       StateMachineErrorPub.publish(ErrorIndicator);
-      while (true)
-      {
-        CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_PROTOCOL_ERROR);
-        if (uCanID == 0)
-        {
-          break;
-        }
-        else
-        {
-          vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-          StateMachinePub.publish(FrameMsg);
-        }
-      }
     }
     if ((u16Status & RECEIVED_MANUALSTEERING_ERROR) == RECEIVED_MANUALSTEERING_ERROR)
     {
       ErrorIndicator.error_flag = ErrorIndicator.APP_MANUAL_ERROR;
       StateMachineErrorPub.publish(ErrorIndicator);
-      while (true)
-      {
-        CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_MANUALSTEERING_ERROR);
-        if (uCanID == 0)
-        {
-          break;
-        }
-        else
-        {
-          vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-          StateMachinePub.publish(FrameMsg);
-        }
-      }
     }
     if (ErrorIndicator.error_flag == ErrorIndicator.NO_APP_ERRORS)
     {
@@ -306,25 +251,11 @@ int main(int argc, char** argv)
     }
     if ((u16Status & RECEIVED_ENG_ERROR_START) == RECEIVED_ENG_ERROR_START)
     {
-      CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_ENG_ERROR_START);
-      vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-      StateMachinePub.publish(FrameMsg);
+      ///// shouldnt this be sent to StateMachineErrorPub
     }
     if ((u16Status & RECEIVED_ENG_ERROR) == RECEIVED_ENG_ERROR)
     {
-      while (true)
-      {
-        CommHandlerControl.vAssemblyStateMachineFrame(&uCanID, u8MsgBytes, RECEIVED_ENG_ERROR);
-        if (uCanID == 0)
-        {
-          break;
-        }
-        else
-        {
-          vFillTheMessageObject(&FrameMsg, uCanID, u8MsgBytes);
-          StateMachinePub.publish(FrameMsg);
-        }
-      }
+      ///// shouldnt this be sent to StateMachineErrorPub
     }
     if ((u16Status & RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT) == RECEIVED_CHANGE_DELTA_GEOMETRY_FRONT)
     {

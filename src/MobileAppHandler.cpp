@@ -333,7 +333,7 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
     {
       ++cnt;
       message.data[cnt % MobileAppRfid::tag_data_frame_size] = epc_byte;
-      // if data frame payload exceeded - every 7 bytes send frame
+      // if data frame payload exceeded
       if (cnt % MobileAppRfid::data_frame_epc_payload == 0)
       {
         ++com;  //  increment com byte
@@ -343,7 +343,7 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
         bzero(message.data, sizeof(uint8_t) * MobileAppRfid::tag_data_frame_size);
         ++cnt;
       }
-    }  // send remaining frame - less than 7 bytes
+    }
     if ((--cnt % MobileAppRfid::data_frame_epc_payload != 0) || (cnt == 0))
     {
       ++com;  //  increment com byte

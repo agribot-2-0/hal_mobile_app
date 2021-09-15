@@ -145,7 +145,6 @@ public:
                         const std::vector<std::vector<uint8_t>>& ids);  // NOLINT(runtime/references)
 
   // tpl control
-  bool isTplPositionChangeRequested(const can_frame& message);
   bool setTplConfig(const can_frame& message);
   tool_manager::TplConfig getTplConfig(const TplConfig::SelectedTpl tpl);
   void sendTplResponseFrame(const uint8_t ret_code, const uint8_t id);

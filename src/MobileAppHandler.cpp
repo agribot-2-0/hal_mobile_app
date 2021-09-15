@@ -147,7 +147,7 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
       ProtocolErrorSpecificQueue.push(message.data[ERROR_SPECIFIC_BYTE]);
       u16Status |= RECEIVED_PROTOCOL_ERROR;
     }
-    else if ((MobileAppCanFrameId::protocol_man_error & addr_mask) == (message.can_id & addr_mask))
+    else if ((MobileAppCanFrameId::protocol_manual_error & addr_mask) == (message.can_id & addr_mask))
     {
       ManualErrorTypeQueue.push(message.data[ERROR_TYPE_BYTE]);
       ManualErrorSpecificQueue.push(message.data[ERROR_SPECIFIC_BYTE]);

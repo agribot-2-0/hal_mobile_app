@@ -10,7 +10,7 @@ namespace MobileAppCanFrameId
 {
 inline constexpr uint16_t protocol_ark{ 0x035 };
 inline constexpr uint16_t protocol_error{ 0x0C8 };
-inline constexpr uint16_t protocol_man_error{ 0x0C9 };  // man - manual
+inline constexpr uint16_t protocol_manual_error{ 0x0C9 };
 inline constexpr uint16_t rfid{ 0x1f4 };
 inline constexpr uint16_t tpl_config{ 0x13D };
 inline constexpr uint16_t tpl_response{ 0x13E };

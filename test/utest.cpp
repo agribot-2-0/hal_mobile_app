@@ -493,7 +493,7 @@ TEST_F(TestFrameParsingMethods, u16ParseCanFrames_protocol_error_frame_Parsed_co
 
 TEST_F(TestFrameParsingMethods, u16ParseCanFrames_protocol_man_error_frame_Parsed_correctly)
 {
-  received_frame.can_id = MobileAppCanFrameId::protocol_man_error;
+  received_frame.can_id = MobileAppCanFrameId::protocol_manual_error;
   received_frame.can_dlc = 2;
   received_frame.data[ERROR_TYPE_BYTE] = 1U;
   received_frame.data[ERROR_SPECIFIC_BYTE] = 1U;

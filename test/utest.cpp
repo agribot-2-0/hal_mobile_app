@@ -8,6 +8,7 @@
 #include <agribot_common/CanBus/CanHelperFunctions.h>
 #include <agribot_msgs/ChangeDeltasGeometryResponse.h>
 #include <hal_mobile_app/MobileAppConstants.h>
+#include <hal_mobile_app/TplConfigHandle/TplConfigHandle.h>
 #include <linux/can.h>
 #include <cmath>
 
@@ -904,6 +905,79 @@ TEST_F(TestFrameParsingMethodsTpl, u16ParseCanFrames_tpl_frame_Back_tpl_Height_s
 
   ASSERT_EQ(MobileAppCanFrameId::tpl_response, response_frame->can_id);
   ASSERT_EQ(request_frame.data[MobileAppTpl::config_id_byte], response_frame->data[MobileAppTpl::config_id_byte]);
+}
+
+TEST(TestTplConfigHandle, setPto_value_out_of_range)
+{
+  TplConfig::TplConfigHandle handle;
+  std::vector<uint8_t> data = { 3, 233 };
+  // 3 is 11 in binary, 233 is 11101001 in binary, twwo bytes combined make 11 1110 1001 which is in decimal 1001
+  bool returned_value = handle.setPto(data);
+
+  ASSERT_FALSE(returned_value);
+}
+
+TEST(TestTplConfigHandle, setPValveFlow_Red_value_out_of_range)
+{
+  TplConfig::TplConfigHandle handle;
+  std::vector<uint8_t> data = { 0, 101 };
+  bool returned_value = handle.setValveFlow(data, TplConfig::ValveColor::red);
+
+  ASSERT_FALSE(returned_value);
+}
+
+TEST(TestTplConfigHandle, setPValveFlow_Blue_value_out_of_range)
+{
+  TplConfig::TplConfigHandle handle;
+  std::vector<uint8_t> data = { 0, 101 };
+  bool returned_value = handle.setValveFlow(data, TplConfig::ValveColor::blue);
+
+  ASSERT_FALSE(returned_value);
+}
+
+TEST(TestTplConfigHandle, setPValveFlow_Green_value_out_of_range)
+{
+  TplConfig::TplConfigHandle handle;
+  std::vector<uint8_t> data = { 0, 101 };
+  bool returned_value = handle.setValveFlow(data, TplConfig::ValveColor::green);
+
+  ASSERT_FALSE(returned_value);
+}
+
+TEST(TestTplConfigHandle, setAngle_value_out_of_range_Below_min)
+{
+  TplConfig::TplConfigHandle handle;
+  std::vector<uint8_t> data = { 129, 14 };
+  // minimum angle value is -0.26, which is converted to 260 (multiplied by 1000)
+  // because is has to be sent by bytes,
+  // then for negative value, the first bit of the first byte has to be 1,
+  // so: 0.27 multiplied by 1000 is 270 which
+  // in binary  is 1 0000 1110 -> then for
+  // negative value -> 1000 0001 0000 1110 -> 1000 0001 is 129, 0000 1110 is 14
+  bool returned_value = handle.setAngle(data);
+
+  ASSERT_FALSE(returned_value);
+}
+
+TEST(TestTplConfigHandle, setAngle_value_out_of_range_Above_max)
+{
+  TplConfig::TplConfigHandle handle;
+  // maximum angle value is 0.52
+  // so: 0.521 multiplied by 1000 is 521 which
+  // in binary  is 10 0000 1001
+  std::vector<uint8_t> data = { 2, 9 };
+  bool returned_value = handle.setAngle(data);
+
+  ASSERT_FALSE(returned_value);
+}
+
+TEST(TestTplConfigHandle, setHeight_value_out_of_range_Above_max)
+{
+  TplConfig::TplConfigHandle handle;
+  std::vector<uint8_t> data = { 1, 195 };
+  bool returned_value = handle.setHeight(data);
+
+  ASSERT_FALSE(returned_value);
 }
 
 TEST_F(TestFrameSendingMethods, vSendRfidTagsIds_Separate_header_and_data_messages)

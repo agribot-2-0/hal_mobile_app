@@ -197,7 +197,7 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
       }
     }
 
-    else if ((MobileAppCanFrameId::tpl_config & addr_mask) == (message.can_id & addr_mask))
+    else if (isTplPositionChangeRequested(message))
     {
       if (setTplConfig(message))
       {
@@ -352,6 +352,13 @@ void MobileAppHandler::vSendRfidTagsIds(const uint8_t sel_ant,
       can_handler_->iSendFrame(&message, false);
     }
   }
+}
+
+// tpl control
+bool MobileAppHandler::isTplPositionChangeRequested(const can_frame& message)
+
+{
+  return (MobileAppCanFrameId::tpl_config & addr_mask) == (message.can_id & addr_mask);
 }
 
 bool MobileAppHandler::setTplConfig(const can_frame& message)

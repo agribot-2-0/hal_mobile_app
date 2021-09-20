@@ -355,32 +355,32 @@ bool MobileAppHandler::setTplConfig(const can_frame& message)
   frame.setupFrame(message);
   using TplConfig::TplConfigId;
   using TplConfig::ValveColor;
-  TplConfigId id = static_cast<TplConfigId>(frame.getData()[MobileAppTpl::config_id_byte]);
+  uint8_t id = (frame.getData()[MobileAppTpl::config_id_byte]);
   switch (id)
   {
-    case TplConfigId::front_pto:
+    case static_cast<uint8_t>(TplConfigId::front_pto):
       return front_tpl_config_.setPto(frame.getData());
-    case TplConfigId::front_green:
+    case static_cast<uint8_t>(TplConfigId::front_green):
       return front_tpl_config_.setValveFlow(frame.getData(), ValveColor::green);
-    case TplConfigId::front_blue:
+    case static_cast<uint8_t>(TplConfigId::front_blue):
       return front_tpl_config_.setValveFlow(frame.getData(), ValveColor::blue);
-    case TplConfigId::front_red:
+    case static_cast<uint8_t>(TplConfigId::front_red):
       return front_tpl_config_.setValveFlow(frame.getData(), ValveColor::red);
-    case TplConfigId::front_tpl_angle:
+    case static_cast<uint8_t>(TplConfigId::front_tpl_angle):
       return front_tpl_config_.setAngle(frame.getData());
-    case TplConfigId::front_tpl_height:
+    case static_cast<uint8_t>(TplConfigId::front_tpl_height):
       return front_tpl_config_.setHeight(frame.getData());
-    case TplConfigId::back_pto:
+    case static_cast<uint8_t>(TplConfigId::back_pto):
       return back_tpl_config_.setPto(frame.getData());
-    case TplConfigId::back_green:
+    case static_cast<uint8_t>(TplConfigId::back_green):
       return back_tpl_config_.setValveFlow(frame.getData(), ValveColor::green);
-    case TplConfigId::back_blue:
+    case static_cast<uint8_t>(TplConfigId::back_blue):
       return back_tpl_config_.setValveFlow(frame.getData(), ValveColor::blue);
-    case TplConfigId::back_red:
+    case static_cast<uint8_t>(TplConfigId::back_red):
       return back_tpl_config_.setValveFlow(frame.getData(), ValveColor::red);
-    case TplConfigId::back_tpl_angle:
+    case static_cast<uint8_t>(TplConfigId::back_tpl_angle):
       return back_tpl_config_.setAngle(frame.getData());
-    case TplConfigId::back_tpl_height:
+    case static_cast<uint8_t>(TplConfigId::back_tpl_height):
       return back_tpl_config_.setHeight(frame.getData());
   }
   return false;

@@ -915,7 +915,7 @@ TEST_F(TestFrameParsingMethodsTpl, u16ParseCanFrames_tpl_frame_Back_tpl_Height_s
 
 TEST_F(TestFrameParsingMethodsTpl, u16ParseCanFrames_tpl_frame_Config_id_Out_of_range)
 {
-  uint8_t tpl_request_config_id = static_cast<uint8_t>(TplConfig::TplConfigId::back_tpl_height) + 1;
+  uint8_t tpl_request_config_id = 0x0D;
   std::vector<uint8_t> tpl_request_frame_bytes = mobile_app_comm_handler_.makeTwoBytesVector(100);
   SetUpTplRequestFrame(tpl_request_config_id, tpl_request_frame_bytes[0], tpl_request_frame_bytes[1]);
   SetUpCanMock();
@@ -1109,6 +1109,40 @@ TEST_F(TestFrameSendingMethods, vSendRfidTagsIds_Assembled_correctly_Vector_with
   ASSERT_EQ(expected_frame.data[MobileAppRfid::com_byte], sent_frame[2]->data[MobileAppRfid::com_byte]);
   ASSERT_EQ(expected_frame.data[1], sent_frame[2]->data[1]);
   ASSERT_EQ(expected_frame.data[7], sent_frame[2]->data[7]);
+}
+
+TEST_F(TestFrameParsingMethodsTpl, getTplConfig_Returns_correct_TplConfig_front)
+{
+  double height_value = 0.2;
+  double prepared_value = height_value * 1000;
+  uint8_t tpl_request_config_id = static_cast<uint8_t>(TplConfig::TplConfigId::front_tpl_height);
+  std::vector<uint8_t> tpl_request_frame_bytes = mobile_app_comm_handler_.makeTwoBytesVector(prepared_value);
+  SetUpTplRequestFrame(tpl_request_config_id, tpl_request_frame_bytes[0], tpl_request_frame_bytes[1]);
+  SetUpCanMock();
+  SetUpMockFunctionCalls();
+  SetUpMobileAppHandler();
+  mobile_app_comm_handler_.u16ParseCanFrames();
+  TplConfig::SelectedTpl sel_tpl;
+  sel_tpl = TplConfig::SelectedTpl::front;
+  tool_manager::TplConfig config = mobile_app_comm_handler_.getTplConfig(sel_tpl);
+  ASSERT_EQ(config.tpl_height, height_value);
+}
+
+TEST_F(TestFrameParsingMethodsTpl, getTplConfig_Returns_correct_TplConfig_back)
+{
+  double height_value = 0.2;
+  double prepared_value = height_value * 1000;
+  uint8_t tpl_request_config_id = static_cast<uint8_t>(TplConfig::TplConfigId::back_tpl_height);
+  std::vector<uint8_t> tpl_request_frame_bytes = mobile_app_comm_handler_.makeTwoBytesVector(prepared_value);
+  SetUpTplRequestFrame(tpl_request_config_id, tpl_request_frame_bytes[0], tpl_request_frame_bytes[1]);
+  SetUpCanMock();
+  SetUpMockFunctionCalls();
+  SetUpMobileAppHandler();
+  mobile_app_comm_handler_.u16ParseCanFrames();
+  TplConfig::SelectedTpl sel_tpl;
+  sel_tpl = TplConfig::SelectedTpl::back;
+  tool_manager::TplConfig config = mobile_app_comm_handler_.getTplConfig(sel_tpl);
+  ASSERT_EQ(config.tpl_height, height_value);
 }
 
 int main(int argc, char** argv)

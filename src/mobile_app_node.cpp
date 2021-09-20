@@ -31,11 +31,6 @@ void synchro_callback(const ros::TimerEvent& event)
   CommHandlerControl.vSetTriggerForController();
 }
 
-void vAppTaskChoosedEventCallback(const std_msgs::String::ConstPtr& ptrMsg)
-{
-  CommHandlerControl.vSetChosenTask(ptrMsg->data);
-}
-
 tool_manager::TplConfig tplMsgToStruct(const agribot_msgs::AgribotTool& msg)
 {
   tool_manager::TplConfig feedback;
@@ -62,7 +57,7 @@ void backToolFeedbackCallback(const agribot_msgs::AgribotTool& msg)
   CommHandlerControl.sendTplFeedbackFrames(TplConfig::SelectedTpl::back, frames_data);
 }
 
-auto castMsgVectorToStdVec(std::vector<agribot_msgs::Tag>& msg_vec)  // NOLINT(runtime/references)
+auto castMsgVectorToStdVec(const std::vector<agribot_msgs::Tag>& msg_vec)  // NOLINT(runtime/references)
 {
   std::vector<std::vector<uint8_t>> std_vec;
   for (agribot_msgs::Tag id : msg_vec)
@@ -160,8 +155,6 @@ int main(int argc, char** argv)
   // Topic used to communicate change of state to the state machine
   ros::Publisher StateMachineErrorPub =
       nh.advertise<agribot_msgs::AgribotAppErrorFlag>("/agribot/state_machine/error", 2);
-  // Topic used to read the path name from task config file
-  ros::Subscriber AppTaskChoosedEventsSub = nh.subscribe("/agribot/chosen_task_name", 1, vAppTaskChoosedEventCallback);
   // Topic for feedback from front TPL:
   ros::Subscriber tpl_front_sub = nh.subscribe("/agribot/encoder/tool/front", 1, frontToolFeedbackCallback);
   // Topic for feedback from back TPL:
@@ -198,12 +191,6 @@ int main(int argc, char** argv)
 
   while (ros::ok())
   {
-    name_tmp = CommHandlerControl.strGetTaskName();
-    if (name_tmp != "")
-    {
-      nh.setParam("/agribot/chosen_task_name", name_tmp);
-    }
-
     ErrorIndicator.error_flag = ErrorIndicator.NO_APP_ERRORS;
     CommHandlerControl.vReceiveCanFrames();
     u16Status = CommHandlerControl.u16ParseCanFrames();
@@ -213,14 +200,13 @@ int main(int argc, char** argv)
       {
         ManualSteeringMsg.linear_velocity = CommHandlerControl.fGetManualLinearVelo();
         ManualSteeringMsg.circle_radius = CommHandlerControl.fGetManualRadius();
-        PublishManualSteering.publish(ManualSteeringMsg);
       }
       else
       {
         ManualSteeringMsg.linear_velocity = 0;
         ManualSteeringMsg.circle_radius = 0;
-        PublishManualSteering.publish(ManualSteeringMsg);
       }
+      PublishManualSteering.publish(ManualSteeringMsg);
       CommHandlerControl.vResetArcReadTriggers();
     }
     if ((u16Status & RECEIVED_PROTOCOL_ERROR) == RECEIVED_PROTOCOL_ERROR)

@@ -16,7 +16,6 @@ MobileAppHandler::MobileAppHandler()
 
   iCommandId = 0;
   bFreshData = false;
-  strChosenTask = "";
   int i = 0;
   while (i < 8)
   {
@@ -120,6 +119,7 @@ uint16_t MobileAppHandler::u16ParseCanFrames()
         {
           u16Status = 0x00;
         }
+
         if (message.data[DIRECTION_SIGN_BYTE] == 0)
         {
           i8DirectionSign = RIGHT_ARCH;
@@ -236,18 +236,6 @@ bool MobileAppHandler::bGetChangeDeltaGeometryUpBack()
 MobileAppSteeringMode::SteeringMode MobileAppHandler::getSteeringMode()
 {
   return steering_mode_;
-}
-
-void MobileAppHandler::vSetChosenTask(std::string strTaskName)
-{
-  strChosenTask = strTaskName;
-}
-
-std::string MobileAppHandler::strGetTaskName()
-{
-  std::string strTemp = strChosenTask;
-  strChosenTask = "";
-  return strTemp;
 }
 
 int MobileAppHandler::configure()
@@ -472,8 +460,6 @@ std::vector<std::uint8_t> MobileAppHandler::prepareQcfData(const tool_manager::T
       return makeTwoBytesVector(static_cast<uint16_t>(feedback.green_valve_flow));
     case TplConfig::ValveColor::blue:
       return makeTwoBytesVector(static_cast<uint16_t>(feedback.blue_valve_flow));
-    default:
-      return {};
   }
 }
 

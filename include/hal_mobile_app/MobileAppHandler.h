@@ -88,7 +88,6 @@ class MobileAppHandler : public AgribotComponent
   bool bFreshData;
   int iCommandId;
   int8_t msg_byte_array[8];
-  std::string strChosenTask;
 
   float fFrontLinear;
   float fFrontAngular;

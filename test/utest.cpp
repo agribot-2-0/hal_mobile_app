@@ -410,12 +410,12 @@ TEST_F(TestFrameParsingMethods, u16ParseCanFrames_manual_steering_frame_backward
   received_frame_.can_id = MobileAppCanFrameId::protocol_ark;
   received_frame_.can_dlc = 6;  // last used byte is at number 5, but this was a wild guess, no value given by the
                                 // namespace, because this frame has no namespace
-  received_frame_.data[LIN_VELO_SIGN_BYTE] = (uint8_t)0;   // 0 - BACKWARD, 1 - FORWARD
-  received_frame_.data[DIRECTION_SIGN_BYTE] = (uint8_t)0;  // 0 - RIGHT_ARCH, 1 - LEFT_ARCH
-  received_frame_.data[LIN_VELO_BYTE] = (uint8_t)1;        // value of first byte of desired linear velocity
-  received_frame_.data[LIN_VELO_BYTE + 1] = (uint8_t)1;    // value of second byte of desired linear velocity
-  received_frame_.data[RADIUS_BYTE] = (uint8_t)1;          // value if first byte of desired radius
-  received_frame_.data[RADIUS_BYTE + 1] = (uint8_t)1;      // value of second byte of desired radius
+  received_frame_.data[LIN_VELO_SIGN_BYTE] = 0;   // 0 - BACKWARD, 1 - FORWARD
+  received_frame_.data[DIRECTION_SIGN_BYTE] = 0;  // 0 - RIGHT_ARCH, 1 - LEFT_ARCH
+  received_frame_.data[LIN_VELO_BYTE] = 1;        // value of first byte of desired linear velocity
+  received_frame_.data[LIN_VELO_BYTE + 1] = 1;    // value of second byte of desired linear velocity
+  received_frame_.data[RADIUS_BYTE] = 1;          // value if first byte of desired radius
+  received_frame_.data[RADIUS_BYTE + 1] = 1;      // value of second byte of desired radius
   SetUpCanMock();
   SetUpMockFunctionCalls();
   SetUpMobileAppHandler();
@@ -430,12 +430,12 @@ TEST_F(TestFrameParsingMethods, u16ParseCanFrames_manual_steering_frame_forward_
   received_frame_.can_id = MobileAppCanFrameId::protocol_ark;
   received_frame_.can_dlc = 6;  // last used byte is at number 5, but this was a wild guess, no value given by the
                                 // namespace, because this frame has no namespace
-  received_frame_.data[LIN_VELO_SIGN_BYTE] = (uint8_t)1;   // 0 - BACKWARD, 1 - FORWARD
-  received_frame_.data[DIRECTION_SIGN_BYTE] = (uint8_t)1;  // 0 - RIGHT_ARCH, 1 - LEFT_ARCH
-  received_frame_.data[LIN_VELO_BYTE] = (uint8_t)1;        // value of first byte of desired linear velocity
-  received_frame_.data[LIN_VELO_BYTE + 1] = (uint8_t)1;    // value of second byte of desired linear velocity
-  received_frame_.data[RADIUS_BYTE] = (uint8_t)1;          // value if first byte of desired radius
-  received_frame_.data[RADIUS_BYTE + 1] = (uint8_t)1;      // value of second byte of desired radius
+  received_frame_.data[LIN_VELO_SIGN_BYTE] = 1;   // 0 - BACKWARD, 1 - FORWARD
+  received_frame_.data[DIRECTION_SIGN_BYTE] = 1;  // 0 - RIGHT_ARCH, 1 - LEFT_ARCH
+  received_frame_.data[LIN_VELO_BYTE] = 1;        // value of first byte of desired linear velocity
+  received_frame_.data[LIN_VELO_BYTE + 1] = 1;    // value of second byte of desired linear velocity
+  received_frame_.data[RADIUS_BYTE] = 1;          // value if first byte of desired radius
+  received_frame_.data[RADIUS_BYTE + 1] = 1;      // value of second byte of desired radius
 
   SetUpCanMock();
   SetUpMockFunctionCalls();
@@ -450,8 +450,8 @@ TEST_F(TestFrameParsingMethods, u16ParseCanFrames_deficient_manual_steering_fram
 {
   received_frame_.can_id = MobileAppCanFrameId::protocol_ark;
   received_frame_.can_dlc = JOYSTICK_CONFIRMATION_FRAME_LENGTH;
-  received_frame_.data[LIN_VELO_SIGN_BYTE] = (uint8_t)0;   // 0 - BACKWARD, else - FORWARD
-  received_frame_.data[DIRECTION_SIGN_BYTE] = (uint8_t)0;  // 0 - RIGHT_ARCH, else - LEFT_ARCH
+  received_frame_.data[LIN_VELO_SIGN_BYTE] = 0;   // 0 - BACKWARD, else - FORWARD
+  received_frame_.data[DIRECTION_SIGN_BYTE] = 0;  // 0 - RIGHT_ARCH, else - LEFT_ARCH
   SetUpCanMock();
   SetUpMockFunctionCalls();
   SetUpMobileAppHandler();
@@ -464,11 +464,11 @@ TEST_F(TestFrameParsingMethods, u16ParseCanFrames_deficient_manual_steering_fram
 TEST_F(TestFrameParsingMethods, u16ParseCanFrames_incorrect_manual_steering_frame_Parsed_correctly)
 {
   received_frame_.can_id = MobileAppCanFrameId::protocol_ark;
-  received_frame_.can_dlc = (uint8_t)6;
-  received_frame_.data[LIN_VELO_SIGN_BYTE] = (uint8_t)2;   // 0 - BACKWARD, 1 - FORWARD
-  received_frame_.data[DIRECTION_SIGN_BYTE] = (uint8_t)2;  // 0 - RIGHT_ARCH, 1 - LEFT_ARCH
-  received_frame_.data[LIN_VELO_BYTE] = (uint8_t)1;        // value of first byte of desired linear velocity
-  received_frame_.data[RADIUS_BYTE] = (uint8_t)1;          // value of first byte of desired radius
+  received_frame_.can_dlc = 6;
+  received_frame_.data[LIN_VELO_SIGN_BYTE] = 2;   // 0 - BACKWARD, 1 - FORWARD
+  received_frame_.data[DIRECTION_SIGN_BYTE] = 2;  // 0 - RIGHT_ARCH, 1 - LEFT_ARCH
+  received_frame_.data[LIN_VELO_BYTE] = 1;        // value of first byte of desired linear velocity
+  received_frame_.data[RADIUS_BYTE] = 1;          // value of first byte of desired radius
   SetUpCanMock();
   SetUpMockFunctionCalls();
   SetUpMobileAppHandler();
@@ -513,8 +513,7 @@ TEST_F(TestFrameParsingMethods, u16ParseCanFrames_protocol_man_error_frame_Parse
 TEST_F(TestFrameParsingMethods, u16ParseCanFrames_steering_mode_frame_crab_mode_Parsed_correctly)
 {
   received_frame_.can_id = MobileAppCanFrameId::change_steering_mode;
-  received_frame_.can_dlc =
-      MobileAppSteeringMode::response_frame_length;  // this is a request frame, but the length is the same
+  received_frame_.can_dlc = MobileAppSteeringMode::request_frame_length;
   received_frame_.data[MobileAppSteeringMode::request_response_byte] = MobileAppSteeringMode::request_byte_value;
   received_frame_.data[MobileAppSteeringMode::steering_mode_byte] =
       static_cast<uint8_t>(MobileAppSteeringMode::SteeringMode::crab_mode);
@@ -1124,7 +1123,7 @@ TEST_F(TestFrameParsingMethodsTpl, getTplConfig_Returns_correct_TplConfig_front)
   mobile_app_comm_handler_.u16ParseCanFrames();
   TplConfig::SelectedTpl sel_tpl;
   sel_tpl = TplConfig::SelectedTpl::front;
-  tool_manager::TplConfig config = mobile_app_comm_handler_.getTplConfig(sel_tpl);
+  auto config = mobile_app_comm_handler_.getTplConfig(sel_tpl);
   ASSERT_EQ(config.tpl_height, height_value);
 }
 

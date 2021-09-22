@@ -1057,9 +1057,9 @@ TEST_F(TestFrameSendingMethods, vSendRfidTagsIds_Assembled_correctly_Vector_with
   ids.push_back({ 1, 2, 3, 4, 5, 6, 7, 8, 9 });
   int number_of_sent_frames =
       (std::ceil(ids[0].size() / static_cast<float>(MobileAppRfid::data_frame_epc_payload)) + 1);
-  // 7 is the number of bytes that will fit into one message, so if a vector has size x,
-  // the number of sent data messages will be x/7 - ceiled, becasue the remaining data also has to be sent
-  // +1 is the header message
+  // data_frame_epc_payload is the number of bytes that will fit into one message, so if a vector has size x,
+  // the number of sent data messages will be x/data_frame_epc_payload - ceiled, becasue the remaining data also has to
+  // be sent +1 is the header message
 
   std::vector<std::shared_ptr<can_frame>> sent_frame;
   for (int i = 0; i < number_of_sent_frames; i++)

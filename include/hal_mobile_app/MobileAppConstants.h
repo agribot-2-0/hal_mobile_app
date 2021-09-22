@@ -62,6 +62,7 @@ inline constexpr uint8_t request_response_byte{ 0 };
 inline constexpr uint8_t response_byte_value{ 1 };
 inline constexpr uint8_t request_byte_value{ 0 };
 inline constexpr uint8_t response_frame_length{ 2 };
+inline constexpr uint8_t request_frame_length{ 2 };
 inline constexpr uint8_t return_code_byte{ 1 };
 }  // namespace MobileAppSteeringMode
 

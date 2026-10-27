@@ -7,7 +7,7 @@
   <maintainer email="a.mendaluk@agribot.eu">Adam Mendaluk</maintainer>
   <maintainer email="m.wiadomski@agribot.eu">Michal Wiadomski</maintainer>
 
-  <license>BSD</license>
+  <license>Apache-2.0</license>
   <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>rospy</build_depend>
